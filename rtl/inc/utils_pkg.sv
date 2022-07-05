@@ -9,6 +9,6 @@
     `include "ahb_pkg.svh"
     `include "nox_pkg.svh"
     `include "core_bus_pkg.svh"
-    `include "riscv_pkg.svh"
+    `include "eth_pkg.svh"
   endpackage
 `endif
