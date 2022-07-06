@@ -10,17 +10,37 @@ import cocotb
 import pytest
 import itertools
 import os
+import logging
+
 from common.constants import cfg_const
 from cocotb.regression import TestFactory
 from cocotb_test.simulator import run
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles
+from cocotb.triggers import ClockCycles, with_timeout
+from cocotbext.axi import AxiBus, AxiLiteBus
+from cocotbext.axi import AxiMaster, AxiLiteMaster
 
 async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_inserter=None):
     eth_flavor = os.getenv("FLAVOR")
-    #------------ Init test ------------#
+
+    log = logging.getLogger(f"cocotb.eth")
     await cocotb.start(Clock(dut.clk, *cfg_const.CLK_100MHz).start())
-    await ClockCycles(dut.clk, 10)
+    dut.rst.setimmediatevalue(1)
+    await ClockCycles(dut.clk, 3)
+    dut.rst.setimmediatevalue(0)
+
+    eth_csr_if  = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk, dut.rst)
+    eth_fifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_fifo_s"), dut.clk, dut.rst)
+
+    eth_csr = {}
+    for i in range(16):
+        eth_csr['csr_'+str(i)] = i*0x8
+    for csr in eth_csr:
+        log.info("CSR [Addr: %s]", hex(eth_csr[csr]))
+        read = eth_csr_if.init_read(address=eth_csr[csr], length=4)
+        await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
+        csr_data = int.from_bytes(read.data.data, byteorder='little', signed=False)
+        log.info("Data = %s", hex(csr_data))
 
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])

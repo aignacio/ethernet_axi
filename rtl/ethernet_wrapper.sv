@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 05.07.2022
+ * Last Modified Date: 06.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -68,6 +68,8 @@ module ethernet_wrapper
   logic        tx_eth_payload_axis_tlast;
   logic        tx_eth_payload_axis_tuser;
 
+  logic        udp_hdr_valid;
+
   assign phy_reset_n = !rst;
   // TODO: Added mmcm clock of 25MHz
   assign phy_ref_clk = clk;
@@ -104,19 +106,24 @@ module ethernet_wrapper
     .o_rdata                                (eth_csr_miso_o.rdata),
     .o_rresp                                (eth_csr_miso_o.rresp),
     // CSR connections
-    .o_eth_mac                              (local_cfg.mac),
+    .o_eth_mac_low                          (local_cfg.mac[23:0]),
+    .o_eth_mac_high                         (local_cfg.mac[47:24]),
     .o_eth_ip                               (local_cfg.ip),
     .o_gateway_ip                           (local_cfg.gateway),
     .o_subnet_mask                          (local_cfg.subnet_mask),
-    .i_recv_mac                             ('0),
-    .i_recv_ip                              ('0),
-    .i_recv_udp_length                      ('0),
-    .o_send_mac                             (),
+    .i_recv_mac_low                         (recv_udp_ff.mac[23:0]),
+    .i_recv_mac_high                        (recv_udp_ff.mac[47:24]),
+    .i_recv_ip                              (recv_udp_ff.ip),
+    .i_recv_udp_length                      (recv_udp_ff.length),
+    .o_send_mac_low                         (),
+    .o_send_mac_high                        (),
     .o_send_ip                              (),
     .o_send_udp_length                      (),
     .o_send_pkt                             (),
     .o_clear_irq                            (),
-    .o_clear_arp                            ()
+    .o_clear_irq_write_trigger              (clear_irq),
+    .o_clear_arp                            (),
+    .o_clear_arp_write_trigger              (clear_arp_cache)
   );
   /* verilator lint_on WIDTH */
 
@@ -313,10 +320,10 @@ module ethernet_wrapper
     .s_udp_payload_axis_tlast               ('0),
     .s_udp_payload_axis_tuser               ('0),
     // UDP frame output
-    .m_udp_hdr_valid                        (),
+    .m_udp_hdr_valid                        (udp_hdr_valid),
     .m_udp_hdr_ready                        ('1),
     .m_udp_eth_dest_mac                     (),
-    .m_udp_eth_src_mac                      (),
+    .m_udp_eth_src_mac                      (recv_udp.mac),
     .m_udp_eth_type                         (),
     .m_udp_ip_version                       (),
     .m_udp_ip_ihl                           (),
@@ -329,11 +336,11 @@ module ethernet_wrapper
     .m_udp_ip_ttl                           (),
     .m_udp_ip_protocol                      (),
     .m_udp_ip_header_checksum               (),
-    .m_udp_ip_source_ip                     (),
+    .m_udp_ip_source_ip                     (recv_udp.ip),
     .m_udp_ip_dest_ip                       (),
     .m_udp_source_port                      (),
     .m_udp_dest_port                        (),
-    .m_udp_length                           (),
+    .m_udp_length                           (recv_udp.length),
     .m_udp_checksum                         (),
     .m_udp_payload_axis_tdata               (),
     .m_udp_payload_axis_tvalid              (),
@@ -359,7 +366,37 @@ module ethernet_wrapper
     .local_ip                               (local_cfg.ip),
     .gateway_ip                             (local_cfg.gateway),
     .subnet_mask                            (local_cfg.subnet_mask),
-    .clear_arp_cache                        ()
+    .clear_arp_cache                        (clear_arp_cache)
   );
 
+  s_eth_udp_t recv_udp_ff, next_recv;
+  s_eth_udp_t recv_udp;
+  logic       irq_ff, next_irq;
+  logic       clear_irq;
+  logic       clear_arp_cache;
+
+  always_comb begin
+    next_recv = recv_udp_ff;
+    next_irq  = irq_ff;
+
+    if (udp_hdr_valid) begin
+      next_recv = recv_udp;
+      next_irq  = 1'b1;
+    end
+
+    if (clear_irq) begin
+      next_irq = 1'b0;
+    end
+  end
+
+  always_ff @ (posedge clk) begin
+    if (rst) begin
+      recv_udp_ff <= s_eth_udp_t'('0);
+      irq_ff      <= 1'b0;
+    end
+    else begin
+      recv_udp_ff <= next_recv;
+      irq_ff      <= next_irq;
+    end
+  end
 endmodule

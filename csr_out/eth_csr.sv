@@ -33,27 +33,32 @@ module eth_csr
   input logic i_clk,
   input logic i_rst_n,
   rggen_axi4lite_if.slave axi4lite_if,
-  output logic [47:0] o_eth_mac,
+  output logic [23:0] o_eth_mac_low,
+  output logic [23:0] o_eth_mac_high,
   output logic [31:0] o_eth_ip,
   output logic [31:0] o_gateway_ip,
   output logic [31:0] o_subnet_mask,
-  input logic [47:0] i_recv_mac,
+  input logic [23:0] i_recv_mac_low,
+  input logic [23:0] i_recv_mac_high,
   input logic [31:0] i_recv_ip,
   input logic [15:0] i_recv_udp_length,
-  output logic [47:0] o_send_mac,
+  output logic [23:0] o_send_mac_low,
+  output logic [23:0] o_send_mac_high,
   output logic [31:0] o_send_ip,
   output logic [15:0] o_send_udp_length,
   output logic o_send_pkt,
   output logic o_clear_irq,
-  output logic o_clear_arp
+  output logic o_clear_irq_write_trigger,
+  output logic o_clear_arp,
+  output logic o_clear_arp_write_trigger
 );
-  rggen_register_if #(8, 64, 64) register_if[13]();
+  rggen_register_if #(8, 64, 64) register_if[16]();
   rggen_axi4lite_adapter #(
     .ID_WIDTH             (ID_WIDTH),
     .ADDRESS_WIDTH        (ADDRESS_WIDTH),
     .LOCAL_ADDRESS_WIDTH  (8),
     .BUS_WIDTH            (64),
-    .REGISTERS            (13),
+    .REGISTERS            (16),
     .PRE_DECODE           (PRE_DECODE),
     .BASE_ADDRESS         (BASE_ADDRESS),
     .BYTE_SIZE            (256),
@@ -66,9 +71,9 @@ module eth_csr
     .axi4lite_if  (axi4lite_if),
     .register_if  (register_if)
   );
-  generate if (1) begin : g_eth_mac
+  generate if (1) begin : g_eth_mac_low
     rggen_bit_field_if #(64) bit_field_if();
-    `rggen_tie_off_unused_signals(64, 64'h0000ffffffffffff, bit_field_if)
+    `rggen_tie_off_unused_signals(64, 64'h0000000000ffffff, bit_field_if)
     rggen_default_register #(
       .READABLE       (1),
       .WRITABLE       (1),
@@ -83,12 +88,12 @@ module eth_csr
       .register_if  (register_if[0]),
       .bit_field_if (bit_field_if)
     );
-    if (1) begin : g_eth_mac
-      localparam bit [47:0] INITIAL_VALUE = 48'h1dee69def061;
-      rggen_bit_field_if #(48) bit_field_sub_if();
-      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 48)
+    if (1) begin : g_eth_mac_low
+      localparam bit [23:0] INITIAL_VALUE = 24'hdef061;
+      rggen_bit_field_if #(24) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 24)
       rggen_bit_field #(
-        .WIDTH          (48),
+        .WIDTH          (24),
         .INITIAL_VALUE  (INITIAL_VALUE),
         .SW_WRITE_ONCE  (0),
         .TRIGGER        (0)
@@ -105,14 +110,14 @@ module eth_csr
         .i_hw_clear         ('0),
         .i_value            ('0),
         .i_mask             ('1),
-        .o_value            (o_eth_mac),
+        .o_value            (o_eth_mac_low),
         .o_value_unmasked   ()
       );
     end
   end endgenerate
-  generate if (1) begin : g_eth_ip
+  generate if (1) begin : g_eth_mac_high
     rggen_bit_field_if #(64) bit_field_if();
-    `rggen_tie_off_unused_signals(64, 64'h00000000ffffffff, bit_field_if)
+    `rggen_tie_off_unused_signals(64, 64'h0000000000ffffff, bit_field_if)
     rggen_default_register #(
       .READABLE       (1),
       .WRITABLE       (1),
@@ -125,6 +130,50 @@ module eth_csr
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
       .register_if  (register_if[1]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_eth_mac_high
+      localparam bit [23:0] INITIAL_VALUE = 24'h1dee69;
+      rggen_bit_field_if #(24) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 24)
+      rggen_bit_field #(
+        .WIDTH          (24),
+        .INITIAL_VALUE  (INITIAL_VALUE),
+        .SW_WRITE_ONCE  (0),
+        .TRIGGER        (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('1),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            ('0),
+        .i_mask             ('1),
+        .o_value            (o_eth_mac_high),
+        .o_value_unmasked   ()
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_eth_ip
+    rggen_bit_field_if #(64) bit_field_if();
+    `rggen_tie_off_unused_signals(64, 64'h00000000ffffffff, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (8),
+      .OFFSET_ADDRESS (8'h10),
+      .BUS_WIDTH      (64),
+      .DATA_WIDTH     (64),
+      .REGISTER_INDEX (0)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[2]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_eth_ip
@@ -161,14 +210,14 @@ module eth_csr
       .READABLE       (1),
       .WRITABLE       (1),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h10),
+      .OFFSET_ADDRESS (8'h18),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[2]),
+      .register_if  (register_if[3]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_gateway_ip
@@ -205,14 +254,14 @@ module eth_csr
       .READABLE       (1),
       .WRITABLE       (1),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h18),
+      .OFFSET_ADDRESS (8'h20),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[3]),
+      .register_if  (register_if[4]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_subnet_mask
@@ -242,29 +291,29 @@ module eth_csr
       );
     end
   end endgenerate
-  generate if (1) begin : g_recv_mac
+  generate if (1) begin : g_recv_mac_low
     rggen_bit_field_if #(64) bit_field_if();
-    `rggen_tie_off_unused_signals(64, 64'h0000ffffffffffff, bit_field_if)
+    `rggen_tie_off_unused_signals(64, 64'h0000000000ffffff, bit_field_if)
     rggen_default_register #(
       .READABLE       (1),
       .WRITABLE       (0),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h20),
+      .OFFSET_ADDRESS (8'h28),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[4]),
+      .register_if  (register_if[5]),
       .bit_field_if (bit_field_if)
     );
-    if (1) begin : g_recv_mac
-      localparam bit [47:0] INITIAL_VALUE = 48'h000000000000;
-      rggen_bit_field_if #(48) bit_field_sub_if();
-      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 48)
+    if (1) begin : g_recv_mac_low
+      localparam bit [23:0] INITIAL_VALUE = 24'h000000;
+      rggen_bit_field_if #(24) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 24)
       rggen_bit_field #(
-        .WIDTH              (48),
+        .WIDTH              (24),
         .STORAGE            (0),
         .EXTERNAL_READ_DATA (1),
         .TRIGGER            (0)
@@ -279,7 +328,51 @@ module eth_csr
         .i_hw_write_data    ('0),
         .i_hw_set           ('0),
         .i_hw_clear         ('0),
-        .i_value            (i_recv_mac),
+        .i_value            (i_recv_mac_low),
+        .i_mask             ('1),
+        .o_value            (),
+        .o_value_unmasked   ()
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_recv_mac_high
+    rggen_bit_field_if #(64) bit_field_if();
+    `rggen_tie_off_unused_signals(64, 64'h0000000000ffffff, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (0),
+      .ADDRESS_WIDTH  (8),
+      .OFFSET_ADDRESS (8'h30),
+      .BUS_WIDTH      (64),
+      .DATA_WIDTH     (64),
+      .REGISTER_INDEX (0)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[6]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_recv_mac_high
+      localparam bit [23:0] INITIAL_VALUE = 24'h000000;
+      rggen_bit_field_if #(24) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 24)
+      rggen_bit_field #(
+        .WIDTH              (24),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1),
+        .TRIGGER            (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('0),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            (i_recv_mac_high),
         .i_mask             ('1),
         .o_value            (),
         .o_value_unmasked   ()
@@ -293,14 +386,14 @@ module eth_csr
       .READABLE       (1),
       .WRITABLE       (0),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h28),
+      .OFFSET_ADDRESS (8'h38),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[5]),
+      .register_if  (register_if[7]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_recv_ip
@@ -337,14 +430,14 @@ module eth_csr
       .READABLE       (1),
       .WRITABLE       (0),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h30),
+      .OFFSET_ADDRESS (8'h40),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[6]),
+      .register_if  (register_if[8]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_recv_udp_length
@@ -374,29 +467,29 @@ module eth_csr
       );
     end
   end endgenerate
-  generate if (1) begin : g_send_mac
+  generate if (1) begin : g_send_mac_low
     rggen_bit_field_if #(64) bit_field_if();
-    `rggen_tie_off_unused_signals(64, 64'h0000ffffffffffff, bit_field_if)
+    `rggen_tie_off_unused_signals(64, 64'h0000000000ffffff, bit_field_if)
     rggen_default_register #(
       .READABLE       (1),
       .WRITABLE       (1),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h38),
+      .OFFSET_ADDRESS (8'h48),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[7]),
+      .register_if  (register_if[9]),
       .bit_field_if (bit_field_if)
     );
-    if (1) begin : g_send_mac
-      localparam bit [47:0] INITIAL_VALUE = 48'h000000000000;
-      rggen_bit_field_if #(48) bit_field_sub_if();
-      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 48)
+    if (1) begin : g_send_mac_low
+      localparam bit [23:0] INITIAL_VALUE = 24'h000000;
+      rggen_bit_field_if #(24) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 24)
       rggen_bit_field #(
-        .WIDTH          (48),
+        .WIDTH          (24),
         .INITIAL_VALUE  (INITIAL_VALUE),
         .SW_WRITE_ONCE  (0),
         .TRIGGER        (0)
@@ -413,7 +506,51 @@ module eth_csr
         .i_hw_clear         ('0),
         .i_value            ('0),
         .i_mask             ('1),
-        .o_value            (o_send_mac),
+        .o_value            (o_send_mac_low),
+        .o_value_unmasked   ()
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_send_mac_high
+    rggen_bit_field_if #(64) bit_field_if();
+    `rggen_tie_off_unused_signals(64, 64'h0000000000ffffff, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (8),
+      .OFFSET_ADDRESS (8'h50),
+      .BUS_WIDTH      (64),
+      .DATA_WIDTH     (64),
+      .REGISTER_INDEX (0)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[10]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_send_mac_high
+      localparam bit [23:0] INITIAL_VALUE = 24'h000000;
+      rggen_bit_field_if #(24) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 24)
+      rggen_bit_field #(
+        .WIDTH          (24),
+        .INITIAL_VALUE  (INITIAL_VALUE),
+        .SW_WRITE_ONCE  (0),
+        .TRIGGER        (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('1),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            ('0),
+        .i_mask             ('1),
+        .o_value            (o_send_mac_high),
         .o_value_unmasked   ()
       );
     end
@@ -425,14 +562,14 @@ module eth_csr
       .READABLE       (1),
       .WRITABLE       (1),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h40),
+      .OFFSET_ADDRESS (8'h58),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[8]),
+      .register_if  (register_if[11]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_send_ip
@@ -469,14 +606,14 @@ module eth_csr
       .READABLE       (1),
       .WRITABLE       (1),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h48),
+      .OFFSET_ADDRESS (8'h60),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[9]),
+      .register_if  (register_if[12]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_send_udp_length
@@ -513,14 +650,14 @@ module eth_csr
       .READABLE       (1),
       .WRITABLE       (1),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h50),
+      .OFFSET_ADDRESS (8'h68),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[10]),
+      .register_if  (register_if[13]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_send_pkt
@@ -554,17 +691,17 @@ module eth_csr
     rggen_bit_field_if #(64) bit_field_if();
     `rggen_tie_off_unused_signals(64, 64'h0000000000000001, bit_field_if)
     rggen_default_register #(
-      .READABLE       (1),
+      .READABLE       (0),
       .WRITABLE       (1),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h58),
+      .OFFSET_ADDRESS (8'h70),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[11]),
+      .register_if  (register_if[14]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_clear_irq
@@ -574,13 +711,14 @@ module eth_csr
       rggen_bit_field #(
         .WIDTH          (1),
         .INITIAL_VALUE  (INITIAL_VALUE),
+        .SW_READ_ACTION (RGGEN_READ_NONE),
         .SW_WRITE_ONCE  (0),
-        .TRIGGER        (0)
+        .TRIGGER        (1)
       ) u_bit_field (
         .i_clk              (i_clk),
         .i_rst_n            (i_rst_n),
         .bit_field_if       (bit_field_sub_if),
-        .o_write_trigger    (),
+        .o_write_trigger    (o_clear_irq_write_trigger),
         .o_read_trigger     (),
         .i_sw_write_enable  ('1),
         .i_hw_write_enable  ('0),
@@ -598,17 +736,17 @@ module eth_csr
     rggen_bit_field_if #(64) bit_field_if();
     `rggen_tie_off_unused_signals(64, 64'h0000000000000001, bit_field_if)
     rggen_default_register #(
-      .READABLE       (1),
+      .READABLE       (0),
       .WRITABLE       (1),
       .ADDRESS_WIDTH  (8),
-      .OFFSET_ADDRESS (8'h60),
+      .OFFSET_ADDRESS (8'h78),
       .BUS_WIDTH      (64),
       .DATA_WIDTH     (64),
       .REGISTER_INDEX (0)
     ) u_register (
       .i_clk        (i_clk),
       .i_rst_n      (i_rst_n),
-      .register_if  (register_if[12]),
+      .register_if  (register_if[15]),
       .bit_field_if (bit_field_if)
     );
     if (1) begin : g_clear_arp
@@ -618,13 +756,14 @@ module eth_csr
       rggen_bit_field #(
         .WIDTH          (1),
         .INITIAL_VALUE  (INITIAL_VALUE),
+        .SW_READ_ACTION (RGGEN_READ_NONE),
         .SW_WRITE_ONCE  (0),
-        .TRIGGER        (0)
+        .TRIGGER        (1)
       ) u_bit_field (
         .i_clk              (i_clk),
         .i_rst_n            (i_rst_n),
         .bit_field_if       (bit_field_sub_if),
-        .o_write_trigger    (),
+        .o_write_trigger    (o_clear_arp_write_trigger),
         .o_read_trigger     (),
         .i_sw_write_enable  ('1),
         .i_hw_write_enable  ('0),

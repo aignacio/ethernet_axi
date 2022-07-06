@@ -12,6 +12,12 @@
     subnet_mask_t subnet_mask;
   } s_eth_cfg_t;
 
+  typedef struct packed {
+    mac_addr_t    mac;
+    ip_addr_t     ip;
+    udp_length_t  length;
+  } s_eth_udp_t;
+
   localparam ARP_CACHE_ADDR_WIDTH            = 9;
   localparam ARP_REQUEST_RETRY_COUNT         = 4;
   localparam ARP_REQUEST_RETRY_INTERVAL      = 125000000*2;
