@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 06.07.2022
+ * Last Modified Date: 07.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -74,7 +74,7 @@ module ethernet_wrapper
   // TODO: Added mmcm clock of 25MHz
   assign phy_ref_clk = clk;
   // TODO: IRQ packet received
-  assign pkt_recv_o = 'b0;
+  assign pkt_recv_o = irq_ff;
 
   /* verilator lint_off WIDTH */
   eth_csr #(
@@ -115,9 +115,9 @@ module ethernet_wrapper
     .i_recv_mac_high                        (recv_udp_ff.mac[47:24]),
     .i_recv_ip                              (recv_udp_ff.ip),
     .i_recv_udp_length                      (recv_udp_ff.length),
-    .o_send_mac_low                         (),
-    .o_send_mac_high                        (),
-    .o_send_ip                              (),
+    .o_send_mac_low                         (send_udp.mac[23:0]),
+    .o_send_mac_high                        (send_udp.mac[47:24]),
+    .o_send_ip                              (send_udp),
     .o_send_udp_length                      (),
     .o_send_pkt                             (),
     .o_clear_irq                            (),
@@ -371,6 +371,7 @@ module ethernet_wrapper
 
   s_eth_udp_t recv_udp_ff, next_recv;
   s_eth_udp_t recv_udp;
+  s_eth_udp_t send_udp;
   logic       irq_ff, next_irq;
   logic       clear_irq;
   logic       clear_arp_cache;

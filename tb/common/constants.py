@@ -4,7 +4,7 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 05.07.2022
+# Last Modified Date: 08.07.2022
 import os
 import glob
 import copy
@@ -42,6 +42,7 @@ class cfg_const:
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}inc/*.sv',recursive=True)
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}inc/*.svh',recursive=True)
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}**/*.sv',recursive=True)
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}**/*.v',recursive=True)
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RGGEN_V_DIR}**/*.v',recursive=True)
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{CSR_DIR}**/*.v',recursive=True)
     # VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/*.v',recursive=True)

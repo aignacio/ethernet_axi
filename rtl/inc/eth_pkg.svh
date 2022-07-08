@@ -4,6 +4,7 @@
   typedef logic [31:0] ip_addr_t;
   typedef logic [15:0] udp_length_t;
   typedef logic [31:0] subnet_mask_t;
+  typedef logic [$clog2(INFIFO_KB_SIZE*1024):0] ptr_t;
 
   typedef struct packed {
     mac_addr_t    mac;
@@ -17,6 +18,23 @@
     ip_addr_t     ip;
     udp_length_t  length;
   } s_eth_udp_t;
+
+  typedef struct packed {
+    ptr_t         rd_ptr;
+    ptr_t         wr_ptr;
+    logic         empty;
+    logic         full;
+    logic         done;
+  } s_fifo_st_t;
+
+  typedef struct packed {
+    logic         clear;
+    logic         start;
+    udp_length_t  length;
+  } s_fifo_cmd_t;
+
+  localparam INFIFO_KB_SIZE                  = 2;
+  localparam OUTFIFO_KB_SIZE                 = 2;
 
   localparam ARP_CACHE_ADDR_WIDTH            = 9;
   localparam ARP_REQUEST_RETRY_COUNT         = 4;

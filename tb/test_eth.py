@@ -4,7 +4,7 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 05.07.2022
+# Last Modified Date: 07.07.2022
 # Last Modified By  : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 import cocotb
 import pytest
@@ -16,9 +16,12 @@ from common.constants import cfg_const
 from cocotb.regression import TestFactory
 from cocotb_test.simulator import run
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, with_timeout
+from cocotb.triggers import ClockCycles, with_timeout, Event
 from cocotbext.axi import AxiBus, AxiLiteBus
 from cocotbext.axi import AxiMaster, AxiLiteMaster
+from cocotbext.eth import GmiiFrame, MiiPhy
+from scapy.layers.l2 import Ether, ARP
+from scapy.layers.inet import IP, UDP
 
 async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_inserter=None):
     eth_flavor = os.getenv("FLAVOR")
@@ -28,10 +31,22 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     dut.rst.setimmediatevalue(1)
     await ClockCycles(dut.clk, 3)
     dut.rst.setimmediatevalue(0)
+    await cocotb.start(Clock(dut.clk, *cfg_const.CLK_100MHz).start())
+    dut.rst.setimmediatevalue(1)
+    await ClockCycles(dut.clk, 3)
+    dut.rst.setimmediatevalue(0)
 
     eth_csr_if  = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk, dut.rst)
     eth_fifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_fifo_s"), dut.clk, dut.rst)
+    mii_phy_if  = MiiPhy(dut.phy_txd, None, dut.phy_tx_en, dut.phy_tx_clk,
+                            dut.phy_rxd, dut.phy_rx_er, dut.phy_rx_dv, dut.phy_rx_clk, speed=100e6)
 
+    dut.phy_crs.setimmediatevalue(0)
+    dut.phy_col.setimmediatevalue(0)
+
+    #############################
+    #    ETH CSR read access    #
+    #############################
     eth_csr = {}
     for i in range(16):
         eth_csr['csr_'+str(i)] = i*0x8
@@ -41,6 +56,24 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
         await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
         csr_data = int.from_bytes(read.data.data, byteorder='little', signed=False)
         log.info("Data = %s", hex(csr_data))
+
+    log.info("Test UDP RX packet")
+    payload = bytes([x % 256 for x in range(256)])
+    eth = Ether(src='5a:51:52:53:54:55', dst='1D:EE:69:DE:F0:61')
+    ip = IP(src='192.168.0.100', dst='192.168.0.211')
+    udp = UDP(sport=5678, dport=1234)
+    test_pkt = eth / ip / udp / payload
+    test_frame = GmiiFrame.from_payload(test_pkt.build(), tx_complete=Event())
+    await mii_phy_if.rx.send(test_frame)
+    await test_frame.tx_complete.wait()
+    timeout_cnt = 0
+    while int(dut.pkt_recv) == 0:
+        await RisingEdge(dut.clk)
+        if timeout_cnt == noc_const.TIMEOUT_VAL:
+            log.error("Timeout on waiting for an IRQ")
+            raise TestFailure("Timeout on waiting for an IRQ")
+        else:
+            timeout_cnt += 1
 
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])
