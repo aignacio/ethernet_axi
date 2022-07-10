@@ -333,7 +333,7 @@ module ethernet_wrapper
     .s_udp_ip_dest_ip                       (send_udp.ip),
     .s_udp_source_port                      (send_udp.src_port),
     .s_udp_dest_port                        (send_udp.dst_port),
-    .s_udp_length                           (send_udp.length),
+    .s_udp_length                           (send_udp.length+'d8),
     .s_udp_checksum                         ('0),
     .s_udp_payload_axis_tdata               (axis_mosi_frame_input.tdata),
     .s_udp_payload_axis_tvalid              (axis_mosi_frame_input.tvalid),

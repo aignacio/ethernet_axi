@@ -230,7 +230,7 @@ module pkt_fifo
         wr_ot      = 1'b1;
       end
 
-      if (~empty_ot && axi_mosi.wvalid && axi_miso.wready) begin
+      if (axi_mosi.wvalid && axi_miso.wready) begin
         axi_write = 1'b1;
         if (axi_mosi.wlast) begin
           next_bid = 1'b1;

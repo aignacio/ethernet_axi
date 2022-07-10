@@ -77,16 +77,23 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
         else:
             timeout_cnt += 1
 
-    data_udp = []
-    for i in range(256//4):
-        read = eth_infifo_if.init_read(address=0x00, length=4)
-        await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
-        data_udp.append(int.from_bytes(read.data.data, byteorder='little', signed=False))
+    read = eth_infifo_if.init_read(address=0x00, length=64*4)
+    await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
+    data_udp = read.data.data
 
-    for i in data_udp:
-        payload = i.to_bytes(4,'little')
-        write = eth_outfifo_if.init_write(address=0x00, data=payload)
-        await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+    write = eth_outfifo_if.init_write(address=0x00, data=data_udp)
+    await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+
+    # data_udp = []
+    # for i in range(256//4):
+        # read = eth_infifo_if.init_read(address=0x00, length=4)
+        # await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
+        # data_udp.append(int.from_bytes(read.data.data, byteorder='little', signed=False))
+
+    # for i in data_udp:
+        # payload = i.to_bytes(4,'little')
+        # write = eth_outfifo_if.init_write(address=0x00, data=payload)
+        # await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
 
     # Prepare to send the pkt again
     read = eth_csr_if.init_read(address=0x14, length=4)

@@ -22,7 +22,7 @@ class cfg_const:
     CLK_100MHz  = (10, "ns")
     CLK_200MHz  = (5, "ns")
     TIMEOUT_VAL = 500
-    TIMEOUT_AXI_T = 50
+    TIMEOUT_AXI_T = 250
     TIMEOUT_AXI = (CLK_100MHz[0]*TIMEOUT_AXI_T, "ns")
     TIMEOUT_IRQ = (CLK_100MHz[0]*TIMEOUT_AXI_T, "ns")
 

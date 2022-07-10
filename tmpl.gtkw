@@ -1,23 +1,23 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Sun Jul 10 14:02:29 2022
+[*] Sun Jul 10 18:23:13 2022
 [*]
 [dumpfile] "/Users/aignacio/projects/ethernet_axi/run_dir/run_verilator_test_eth_arty/dump.fst"
-[dumpfile_mtime] "Sun Jul 10 14:00:31 2022"
-[dumpfile_size] 135661
+[dumpfile_mtime] "Sun Jul 10 14:33:01 2022"
+[dumpfile_size] 136236
 [savefile] "/Users/aignacio/projects/ethernet_axi/tmpl.gtkw"
-[timestart] 28922000
-[size] 2026 1802
-[pos] 848 102
-*-15.871946 29072500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[timestart] 31095000
+[size] 1680 998
+[pos] 0 156
+*-17.643089 31570000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] .
 [treeopen] .tb_eth.
 [treeopen] .tb_eth.u_eth.
-[treeopen] .tb_eth.u_eth.u_infifo.
+[treeopen] .tb_eth.u_eth.u_outfifo.
 [sst_width] 307
 [signals_width] 383
 [sst_expanded] 1
-[sst_vpaned_height] 589
+[sst_vpaned_height] 339
 @28
 tb_eth.clk
 tb_eth.rst
@@ -85,7 +85,7 @@ tb_eth.phy_txd[3:0]
 tb_eth.pkt_recv
 @1401200
 -phy_mii
-@800200
+@c00200
 -m_udp
 @22
 tb_eth.u_eth.u_udp_complete.m_udp_checksum[15:0]
@@ -122,7 +122,7 @@ tb_eth.u_eth.u_udp_complete.m_udp_payload_axis_tlast
 tb_eth.u_eth.u_udp_complete.m_udp_payload_axis_tready
 tb_eth.u_eth.u_udp_complete.m_udp_payload_axis_tuser
 tb_eth.u_eth.u_udp_complete.m_udp_payload_axis_tvalid
-@1000200
+@1401200
 -m_udp
 @c00200
 -s_udp
@@ -156,21 +156,47 @@ tb_eth.u_eth.u_infifo.axis_write
 @22
 tb_eth.u_eth.u_infifo.wr_ptr_ff[11:0]
 tb_eth.u_eth.u_infifo.wr_mem_data[31:0]
-@800201
+@800200
 -infifo
-@29
+@28
 tb_eth.u_eth.u_infifo.axi_mosi.arvalid
-@100000029
+@100000028
 tb_eth.u_eth.u_infifo.axi_mosi.arsize[2:0]
-@23
+@22
 tb_eth.u_eth.u_infifo.axi_mosi.arid[7:0]
-@29
+@28
 tb_eth.u_eth.u_infifo.axi_mosi.rready
 tb_eth.u_eth.u_infifo.axi_miso.rvalid
 tb_eth.u_eth.u_infifo.axi_miso.rlast
-@23
+@22
 tb_eth.u_eth.u_infifo.axi_miso.rdata[31:0]
-@1000201
+@1000200
 -infifo
+@800200
+-outfifo
+@23
+tb_eth.u_eth.u_outfifo.wr_ptr_ff[11:0]
+@22
+tb_eth.u_eth.u_outfifo.rd_ptr_ff[11:0]
+@28
+tb_eth.u_eth.u_outfifo.axi_mosi.awvalid
+tb_eth.u_eth.u_outfifo.axi_miso.awready
+@22
+tb_eth.u_eth.u_outfifo.axi_mosi.awid[7:0]
+tb_eth.u_eth.u_outfifo.axi_mosi.wdata[31:0]
+@28
+tb_eth.u_eth.u_outfifo.axi_mosi.wlast
+@22
+tb_eth.u_eth.u_outfifo.axi_mosi.wstrb[3:0]
+@28
+tb_eth.u_eth.u_outfifo.axi_mosi.wvalid
+tb_eth.u_eth.u_outfifo.axi_miso.wready
+@22
+tb_eth.u_eth.u_outfifo.axi_miso.bid[7:0]
+@28
+tb_eth.u_eth.u_outfifo.axi_miso.bvalid
+tb_eth.u_eth.u_outfifo.axi_mosi.bready
+@1000200
+-outfifo
 [pattern_trace] 1
 [pattern_trace] 0
