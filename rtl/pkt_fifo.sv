@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 08.07.2022
- * Last Modified Date: 08.07.2022
+ * Last Modified Date: 10.07.2022
  */
 module pkt_fifo
   import utils_pkg::*;
@@ -28,13 +28,14 @@ module pkt_fifo
   localparam  M_WIDTH = (FIFO_TYPE == "IN") ? (INFIFO_KB_SIZE*256) :
                                               (OUTFIFO_KB_SIZE*256);
 
-  logic [M_WIDTH-1:0][31:0] mem_ff;
+  //logic [M_WIDTH-1:0][31:0] mem_ff;
+
+  typedef logic [$bits({axi_mosi.arlen,axi_mosi.arid})-1:0] fifo_t;
 
   logic axis_read;
   logic axis_write;
   logic axi_read;
   logic axi_write;
-  logic axis_rd_ff, next_axis_rd;
   udp_length_t len_cnt_ff, next_len;
 
   // Byte based pointers
@@ -44,25 +45,39 @@ module pkt_fifo
   logic [$clog2(M_WIDTH)-1:0] rd_mem_addr;
   logic                       rd_mem_en;
   logic [31:0]                rd_mem_data;
+
   logic [$clog2(M_WIDTH)-1:0] wr_mem_addr;
   logic                       wr_mem_en;
   logic [31:0]                wr_mem_data;
-  logic [31:0]                wr_mem_strb;
-  logic                       done_ff, next_done;
+  logic [3:0]                 wr_mem_strb;
+  logic                       full_ot;
+  logic                       empty_ot;
+  logic                       rd_ot;
+  logic                       wr_ot;
+  logic                       start_rd_ff, next_rd_start;
+  logic                       bid_ff, next_bid;
+
+  // Controls streaming out of data in OutFIFO
+  fsm_pkt_t   st_ff, next_st;
+  logic [1:0] lsb_ff, next_lsb;
+  logic       txn_done;
+
+  fifo_t      data_in_ot;
+  fifo_t      data_out_ot;
+  axi_alen_t  alen_rd_ff, next_alen;
+  axi_alen_t  cur_alen;
 
   always_comb begin
-    fifo_st_o = s_fifo_st_t'('0);
     fifo_st_o.rd_ptr = rd_ptr_ff;
     fifo_st_o.wr_ptr = wr_ptr_ff;
     fifo_st_o.empty  = (rd_ptr_ff == wr_ptr_ff);
 
     if (FIFO_TYPE == "IN") begin
       fifo_st_o.full = ((rd_ptr_ff-wr_ptr_ff) == INFIFO_KB_SIZE*1024);
-      fifo_st_o.done = axis_sin_mosi.tlast;
+      fifo_st_o.done = axis_sin_mosi.tvalid && axis_sin_mosi.tlast && axis_sin_miso.tready;
     end
     else begin
       fifo_st_o.full = ((rd_ptr_ff-wr_ptr_ff) == OUTFIFO_KB_SIZE*1024);
-      fifo_st_o.done = 1'b0;
     end
   end
 
@@ -70,17 +85,14 @@ module pkt_fifo
     next_rd_ptr = rd_ptr_ff;
     next_wr_ptr = wr_ptr_ff;
 
-    axi_read    = 1'b0;
-    axi_write   = 1'b0;
-
     if (FIFO_TYPE == "IN") begin
       // InFIFO
-      next_rd_ptr = rd_ptr_ff + (axi_read   ? 'd4 : 'd0);
-      next_wr_ptr = wr_ptr_ff + (axis_write ? 'd1 : 'd0);
-
-      rd_mem_addr = rd_ptr_ff[$clog2(INFIFO_KB_SIZE*1024)-1:0] >> 2;
+      next_rd_ptr = rd_ptr_ff + (axi_read ? 'd4 : 'd0);
+      rd_mem_addr = rd_ptr_ff[$clog2(INFIFO_KB_SIZE*1024)-1:2];
       rd_mem_en   = axi_read;
-      wr_mem_addr = wr_ptr_ff[$clog2(INFIFO_KB_SIZE*1024)-1:0] >> 2;
+
+      next_wr_ptr = wr_ptr_ff + (axis_write ? 'd1 : 'd0);
+      wr_mem_addr = wr_ptr_ff[$clog2(INFIFO_KB_SIZE*1024)-1:2];
       wr_mem_en   = axis_write;
       wr_mem_data = {axis_sin_mosi.tdata, axis_sin_mosi.tdata,
                      axis_sin_mosi.tdata, axis_sin_mosi.tdata};
@@ -93,29 +105,28 @@ module pkt_fifo
     end
     else begin
       // OutFIFO
-      next_rd_ptr = rd_ptr_ff + ((axis_read && axis_sout_miso.tready) ? 'd1 : 'd0);
-      next_wr_ptr = wr_ptr_ff + (axi_write  ? 'd4 : 'd0);
-
-      rd_mem_addr = rd_ptr_ff[$clog2(OUTFIFO_KB_SIZE*1024)-1:0] >> 2;
+      next_rd_ptr = rd_ptr_ff + (axis_read ? 'd1 : 'd0);
+      rd_mem_addr = rd_ptr_ff[$clog2(OUTFIFO_KB_SIZE*1024)-1:2];
       rd_mem_en   = axis_read;
-      wr_mem_addr = wr_ptr_ff[$clog2(OUTFIFO_KB_SIZE*1024)-1:0] >> 2;
+
+      next_wr_ptr = wr_ptr_ff + (axi_write  ? 'd4 : 'd0);
+      wr_mem_addr = wr_ptr_ff[$clog2(OUTFIFO_KB_SIZE*1024)-1:2];
       wr_mem_en   = axi_write;
       wr_mem_data = axi_mosi.wdata;
       wr_mem_strb = axi_mosi.wstrb;
     end
 
-    if (fifo_cmd_st.clear) begin
+    if (fifo_cmd_i.clear) begin
       next_rd_ptr = '0;
       next_wr_ptr = '0;
     end
   end : fifo_st_and_mem
 
   always_comb begin : axi_stream_ctrl
-    next_len = len_cnt_ff;
-    next_axis_rd = axis_rd_ff;
-    axis_write   = 1'b0;
-    axis_read    = 1'b0;
-    next_done    = (done_ff && fifo_cmd_i.start) ? 1'b1 : 1'b0;
+    next_len   = len_cnt_ff;
+    axis_write = 1'b0;
+    axis_read  = 1'b0;
+    next_lsb   = lsb_ff;
 
     if (FIFO_TYPE == "IN") begin
       axis_sout_mosi = s_axis_mosi_t'('0);
@@ -130,61 +141,168 @@ module pkt_fifo
     else begin
       axis_sin_miso  = s_axis_miso_t'('0);
       axis_sout_mosi = s_axis_mosi_t'('0);
-      axis_sout_mosi.tvalid = axis_rd_ff;
-      axis_sout_mosi.tdata  = //TODO;
-      axis_sout_mosi.tlast  = axis_rd_ff ? (len_cnt_ff == (fifo_cmd_i.len_cnt_ff - 'd1)) : 1'b0;
-      fifo_st_o.done = done_ff;
 
-      if (axis_sout_mosi.tvalid && axis_sout_miso.tready) begin
-        next_len = len_cnt_ff + 'd1;
+      if ((st_ff == IDLE_PKT_ST) && (next_st == STREAMING_PKT_ST)) begin
+        axis_read = 1'b1;
+        next_lsb  = rd_ptr_ff[1:0];
       end
 
-      if (~done_ff && fifo_cmd_i.start && (len_cnt_ff < fifo_cmd_i.length)) begin
-        next_axis_rd = 1'b1;
-        axis_read = 1'b1;
-        if (next_len == fifo_cmd_i.length) begin
-          next_done    = 1'b1;
-          next_axis_rd = 1'b0;
-          axis_read    = 1'b0;
+      if (st_ff == STREAMING_PKT_ST) begin
+        axis_sout_mosi.tvalid = 1'b1;
+        axis_sout_mosi.tlast  = (len_cnt_ff == (fifo_cmd_i.length - 'd1));
+        case (lsb_ff)
+          'd0:  axis_sout_mosi.tdata = rd_mem_data[7:0];
+          'd1:  axis_sout_mosi.tdata = rd_mem_data[15:8];
+          'd2:  axis_sout_mosi.tdata = rd_mem_data[23:16];
+          'd3:  axis_sout_mosi.tdata = rd_mem_data[31:24];
+        endcase
+
+        if (axis_sout_miso.tready) begin
+          axis_read = 1'b1;
+          next_len  = len_cnt_ff + 'd1;
         end
       end
-      else begin
-        next_len = 0;
+    end
+
+    fifo_st_o.done = (next_st == DONE_PKT_ST) && (st_ff == STREAMING_PKT_ST);
+    txn_done = axis_sout_mosi.tvalid && axis_sout_miso.tready;
+  end : axi_stream_ctrl
+
+  always_comb begin : st_axi_stream
+    next_st = st_ff;
+    if (FIFO_TYPE != "IN") begin
+      case (st_ff)
+        IDLE_PKT_ST:      next_st = fifo_cmd_i.start ? STREAMING_PKT_ST : IDLE_PKT_ST;
+        STREAMING_PKT_ST: next_st = (txn_done && ((fifo_cmd_i.length-1) == len_cnt_ff)) ? DONE_PKT_ST : STREAMING_PKT_ST;
+        DONE_PKT_ST:      next_st = fifo_cmd_i.start ? DONE_PKT_ST : IDLE_PKT_ST;
+        default           next_st = IDLE_PKT_ST;
+      endcase
+    end
+  end : st_axi_stream
+
+  always_comb begin : axi_slave_if
+    axi_miso      = s_axi_miso_t'('0);
+    wr_ot         = 1'b0;
+    data_in_ot    = '0;
+    next_alen     = alen_rd_ff;
+    axi_write     = 1'b0;
+    axi_read      = 1'b0;
+    next_rd_start = start_rd_ff;
+    rd_ot         = 1'b0;
+    cur_alen      = '0;
+    next_bid      = bid_ff;
+
+    if (FIFO_TYPE == "IN") begin
+      axi_miso.arready = ~full_ot;
+
+      if (axi_mosi.arvalid && axi_miso.arready) begin
+        data_in_ot = {axi_mosi.arlen,axi_mosi.arid};
+        wr_ot      = 1'b1;
+      end
+
+      if (~empty_ot && ~fifo_st_o.empty && ~start_rd_ff) begin
+        {next_alen, axi_miso.rid} = data_out_ot;
+        next_rd_start = 1'b1;
+        axi_read      = 1'b1;
+      end
+
+      if (start_rd_ff) begin
+        {cur_alen, axi_miso.rid} = data_out_ot;
+        axi_miso.rvalid = 1'b1; //~fifo_st_o.empty;
+        axi_miso.rlast  = (alen_rd_ff == 'd0);
+        next_alen = alen_rd_ff - ((axi_miso.rvalid && axi_mosi.rready) ? 'd1 : 'd0);
+        axi_read  = axi_miso.rvalid && axi_mosi.rready && ~axi_miso.rlast;
+        axi_miso.rdata = rd_mem_data;
+      end
+
+      if (start_rd_ff) begin
+        next_rd_start = (axi_miso.rvalid && axi_mosi.rready && axi_miso.rlast) ? 1'b0 : 1'b1;
+      end
+
+      rd_ot = axi_miso.rvalid && axi_miso.rlast && axi_mosi.rready;
+    end
+    else begin
+      axi_miso.awready = ~full_ot;
+      axi_miso.wready = ~fifo_st_o.full;
+
+      if (axi_mosi.awvalid && axi_miso.awready) begin
+        data_in_ot = {axi_mosi.awlen,axi_mosi.awid};
+        wr_ot      = 1'b1;
+      end
+
+      if (~empty_ot && axi_mosi.wvalid && axi_miso.wready) begin
+        axi_write = 1'b1;
+        if (axi_mosi.wlast) begin
+          next_bid = 1'b1;
+        end
+      end
+
+      if (bid_ff) begin
+        axi_miso.bvalid = 1'b1;
+        {cur_alen,axi_miso.bid} = data_out_ot;
+        if (axi_mosi.bready) begin
+          rd_ot    = 1'b1;
+          next_bid = 1'b0;
+        end
       end
     end
-  end : axi_stream_ctrl
+  end : axi_slave_if
 
   always_ff @ (posedge clk) begin
     if (rst) begin
-      rd_ptr_ff       <= '0;
-      wr_ptr_ff       <= '0;
-      axis_rd_ff      <= '0;
-      len_cnt_ff      <= '0;
-      done_ff         <= '0;
+      rd_ptr_ff   <= '0;
+      wr_ptr_ff   <= '0;
+      len_cnt_ff  <= '0;
+      st_ff       <= IDLE_PKT_ST;
+      lsb_ff      <= '0;
+      alen_rd_ff  <= '0;
+      start_rd_ff <= '0;
+      bid_ff      <= '0;
     end
     else begin
-      rd_ptr_ff       <= next_rd_ptr;
-      wr_ptr_ff       <= next_wr_ptr;
-      axis_rd_ff      <= next_axis_rd;
-      len_cnt_ff      <= next_len;
-      done_ff         <= next_done;
+      rd_ptr_ff   <= next_rd_ptr;
+      wr_ptr_ff   <= next_wr_ptr;
+      len_cnt_ff  <= next_len;
+      st_ff       <= next_st;
+      lsb_ff      <= next_lsb;
+      alen_rd_ff  <= next_alen;
+      start_rd_ff <= next_rd_start;
+      bid_ff      <= next_bid;
     end
   end
+
+  eth_fifo #(
+    .SLOTS (ETH_OT_FIFO),
+    .WIDTH ($bits({axi_mosi.arlen,axi_mosi.arid}))
+  ) u_axi_ot_txn (
+    .clk     (clk),
+    .rst     (rst),
+    .clear_i ('0),
+    .write_i (wr_ot),
+    .read_i  (rd_ot),
+    .data_i  (data_in_ot),
+    .data_o  (data_out_ot),
+    .error_o (),
+    .full_o  (full_ot),
+    .empty_o (empty_ot),
+    .ocup_o  (),
+    .free_o  ()
+  );
 
   bytewrite_tdp_ram_rf#(
     .ADDR_WIDTH ($clog2(M_WIDTH))
   ) u_ram (
-    .clkA   (clk),
+    .clk    (clk),
     .enaA   (rd_mem_en),
     .weA    ('b0),
     .addrA  (rd_mem_addr),
     .dinA   ('b0),
     .doutA  (rd_mem_data),
-    .clkB   (clk),
     .enaB   (wr_mem_en),
     .weB    (wr_mem_strb),
     .addrB  (wr_mem_addr),
     .dinB   (wr_mem_data),
     .doutB  ()
   );
+
 endmodule

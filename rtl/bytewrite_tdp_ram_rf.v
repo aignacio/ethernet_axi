@@ -11,13 +11,12 @@ module bytewrite_tdp_ram_rf#(
   parameter   DATA_WIDTH      =  NUM_COL*COL_WIDTH  // Data  Width in bits
   //----------------------------------------------------------------------
 )(
-  input clkA,
+  input clk,
   input enaA,
   input [NUM_COL-1:0] weA,
   input [ADDR_WIDTH-1:0] addrA,
   input [DATA_WIDTH-1:0] dinA,
   output reg [DATA_WIDTH-1:0] doutA,
-  input clkB,
   input enaB,
   input [NUM_COL-1:0] weB,
   input [ADDR_WIDTH-1:0] addrB,
@@ -28,7 +27,7 @@ module bytewrite_tdp_ram_rf#(
    reg [DATA_WIDTH-1:0]   ram_block [(2**ADDR_WIDTH)-1:0];
    integer                i;
    // Port-A Operation
-   always @ (posedge clkA) begin
+   always @ (posedge clk) begin
       if(enaA) begin
          for(i=0;i<NUM_COL;i=i+1) begin
             if(weA[i]) begin
@@ -37,10 +36,6 @@ module bytewrite_tdp_ram_rf#(
          end
          doutA <= ram_block[addrA];
       end
-   end
-
-   // Port-B Operation:
-   always @ (posedge clkB) begin
       if(enaB) begin
          for(i=0;i<NUM_COL;i=i+1) begin
             if(weB[i]) begin

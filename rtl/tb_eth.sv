@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 05.06.2022
- * Last Modified Date: 05.07.2022
+ * Last Modified Date: 10.07.2022
  */
 module tb_eth
   import utils_pkg::*;
@@ -37,52 +37,99 @@ module tb_eth
   output  axi_error_t     eth_csr_rresp,
   output                  eth_csr_rvalid,
 
-  // Slave AXI4 I/F
-  input   axi_tid_t       eth_fifo_s_awid,
-  input   axi_addr_t      eth_fifo_s_awaddr,
-  input   axi_alen_t      eth_fifo_s_awlen,
-  input   axi_size_t      eth_fifo_s_awsize,
-  input   axi_burst_t     eth_fifo_s_awburst,
-  input                   eth_fifo_s_awlock,
-  input   [3:0]           eth_fifo_s_awcache,
-  input   axi_prot_t      eth_fifo_s_awprot,
-  input   [3:0]           eth_fifo_s_awqos,
-  input   [3:0]           eth_fifo_s_awregion,
-  input   axi_user_req_t  eth_fifo_s_awuser,
-  input                   eth_fifo_s_awvalid,
-  input   axi_data_t      eth_fifo_s_wdata,
-  input   axi_wr_strb_t   eth_fifo_s_wstrb,
-  input                   eth_fifo_s_wlast,
-  input   axi_user_data_t eth_fifo_s_wuser,
-  input                   eth_fifo_s_wvalid,
-  input                   eth_fifo_s_bready,
-  input   axi_tid_t       eth_fifo_s_arid,
-  input   axi_addr_t      eth_fifo_s_araddr,
-  input   axi_alen_t      eth_fifo_s_arlen,
-  input   axi_size_t      eth_fifo_s_arsize,
-  input   axi_burst_t     eth_fifo_s_arburst,
-  input                   eth_fifo_s_arlock,
-  input   [3:0]           eth_fifo_s_arcache,
-  input   axi_prot_t      eth_fifo_s_arprot,
-  input   [3:0]           eth_fifo_s_arqos,
-  input   [3:0]           eth_fifo_s_arregion,
-  input   axi_user_req_t  eth_fifo_s_aruser,
-  input                   eth_fifo_s_arvalid,
-  input                   eth_fifo_s_rready,
+  // Slave INFIFO AXI4 I/F
+  input   axi_tid_t       eth_infifo_s_awid,
+  input   axi_addr_t      eth_infifo_s_awaddr,
+  input   axi_alen_t      eth_infifo_s_awlen,
+  input   axi_size_t      eth_infifo_s_awsize,
+  input   axi_burst_t     eth_infifo_s_awburst,
+  input                   eth_infifo_s_awlock,
+  input   [3:0]           eth_infifo_s_awcache,
+  input   axi_prot_t      eth_infifo_s_awprot,
+  input   [3:0]           eth_infifo_s_awqos,
+  input   [3:0]           eth_infifo_s_awregion,
+  input   axi_user_req_t  eth_infifo_s_awuser,
+  input                   eth_infifo_s_awvalid,
+  input   axi_data_t      eth_infifo_s_wdata,
+  input   axi_wr_strb_t   eth_infifo_s_wstrb,
+  input                   eth_infifo_s_wlast,
+  input   axi_user_data_t eth_infifo_s_wuser,
+  input                   eth_infifo_s_wvalid,
+  input                   eth_infifo_s_bready,
+  input   axi_tid_t       eth_infifo_s_arid,
+  input   axi_addr_t      eth_infifo_s_araddr,
+  input   axi_alen_t      eth_infifo_s_arlen,
+  input   axi_size_t      eth_infifo_s_arsize,
+  input   axi_burst_t     eth_infifo_s_arburst,
+  input                   eth_infifo_s_arlock,
+  input   [3:0]           eth_infifo_s_arcache,
+  input   axi_prot_t      eth_infifo_s_arprot,
+  input   [3:0]           eth_infifo_s_arqos,
+  input   [3:0]           eth_infifo_s_arregion,
+  input   axi_user_req_t  eth_infifo_s_aruser,
+  input                   eth_infifo_s_arvalid,
+  input                   eth_infifo_s_rready,
 
-  output                  eth_fifo_s_awready,
-  output                  eth_fifo_s_wready,
-  output  axi_tid_t       eth_fifo_s_bid,
-  output  axi_error_t     eth_fifo_s_bresp,
-  output  axi_user_rsp_t  eth_fifo_s_buser,
-  output                  eth_fifo_s_bvalid,
-  output                  eth_fifo_s_arready,
-  output  axi_tid_t       eth_fifo_s_rid,
-  output  axi_data_t      eth_fifo_s_rdata,
-  output  axi_error_t     eth_fifo_s_rresp,
-  output                  eth_fifo_s_rlast,
-  output  axi_user_data_t eth_fifo_s_ruser,
-  output                  eth_fifo_s_rvalid,
+  output                  eth_infifo_s_awready,
+  output                  eth_infifo_s_wready,
+  output  axi_tid_t       eth_infifo_s_bid,
+  output  axi_error_t     eth_infifo_s_bresp,
+  output  axi_user_rsp_t  eth_infifo_s_buser,
+  output                  eth_infifo_s_bvalid,
+  output                  eth_infifo_s_arready,
+  output  axi_tid_t       eth_infifo_s_rid,
+  output  axi_data_t      eth_infifo_s_rdata,
+  output  axi_error_t     eth_infifo_s_rresp,
+  output                  eth_infifo_s_rlast,
+  output  axi_user_data_t eth_infifo_s_ruser,
+  output                  eth_infifo_s_rvalid,
+
+  // Slave OUTFIFO AXI4 I/F
+  input   axi_tid_t       eth_outfifo_s_awid,
+  input   axi_addr_t      eth_outfifo_s_awaddr,
+  input   axi_alen_t      eth_outfifo_s_awlen,
+  input   axi_size_t      eth_outfifo_s_awsize,
+  input   axi_burst_t     eth_outfifo_s_awburst,
+  input                   eth_outfifo_s_awlock,
+  input   [3:0]           eth_outfifo_s_awcache,
+  input   axi_prot_t      eth_outfifo_s_awprot,
+  input   [3:0]           eth_outfifo_s_awqos,
+  input   [3:0]           eth_outfifo_s_awregion,
+  input   axi_user_req_t  eth_outfifo_s_awuser,
+  input                   eth_outfifo_s_awvalid,
+  input   axi_data_t      eth_outfifo_s_wdata,
+  input   axi_wr_strb_t   eth_outfifo_s_wstrb,
+  input                   eth_outfifo_s_wlast,
+  input   axi_user_data_t eth_outfifo_s_wuser,
+  input                   eth_outfifo_s_wvalid,
+  input                   eth_outfifo_s_bready,
+  input   axi_tid_t       eth_outfifo_s_arid,
+  input   axi_addr_t      eth_outfifo_s_araddr,
+  input   axi_alen_t      eth_outfifo_s_arlen,
+  input   axi_size_t      eth_outfifo_s_arsize,
+  input   axi_burst_t     eth_outfifo_s_arburst,
+  input                   eth_outfifo_s_arlock,
+  input   [3:0]           eth_outfifo_s_arcache,
+  input   axi_prot_t      eth_outfifo_s_arprot,
+  input   [3:0]           eth_outfifo_s_arqos,
+  input   [3:0]           eth_outfifo_s_arregion,
+  input   axi_user_req_t  eth_outfifo_s_aruser,
+  input                   eth_outfifo_s_arvalid,
+  input                   eth_outfifo_s_rready,
+
+  output                  eth_outfifo_s_awready,
+  output                  eth_outfifo_s_wready,
+  output  axi_tid_t       eth_outfifo_s_bid,
+  output  axi_error_t     eth_outfifo_s_bresp,
+  output  axi_user_rsp_t  eth_outfifo_s_buser,
+  output                  eth_outfifo_s_bvalid,
+  output                  eth_outfifo_s_arready,
+  output  axi_tid_t       eth_outfifo_s_rid,
+  output  axi_data_t      eth_outfifo_s_rdata,
+  output  axi_error_t     eth_outfifo_s_rresp,
+  output                  eth_outfifo_s_rlast,
+  output  axi_user_data_t eth_outfifo_s_ruser,
+  output                  eth_outfifo_s_rvalid,
 
   // Ethernet: 100BASE-T MII
   output                  phy_ref_clk,
@@ -98,12 +145,15 @@ module tb_eth
   output                  phy_reset_n,
 
   // IRQ
-  output                  pkt_recv
+  output                  pkt_recv,
+  output                  pkt_sent
 );
   s_axil_mosi_t eth_csr_mosi;
   s_axil_miso_t eth_csr_miso;
-  s_axi_mosi_t  eth_fifo_mosi;
-  s_axi_miso_t  eth_fifo_miso;
+  s_axi_mosi_t  eth_infifo_mosi;
+  s_axi_miso_t  eth_infifo_miso;
+  s_axi_mosi_t  eth_outfifo_mosi;
+  s_axi_miso_t  eth_outfifo_miso;
 
   always_comb begin
     // Slave AXI4 lite - ETH CSR I/F
@@ -132,75 +182,126 @@ module tb_eth
     eth_csr_rresp   = eth_csr_miso.rresp;
     eth_csr_rvalid  = eth_csr_miso.rvalid;
 
-    // Slave AXI4 I/F
-    eth_fifo_mosi.awid     = eth_fifo_s_awid;
-    eth_fifo_mosi.awaddr   = eth_fifo_s_awaddr;
-    eth_fifo_mosi.awlen    = eth_fifo_s_awlen;
-    eth_fifo_mosi.awsize   = eth_fifo_s_awsize;
-    eth_fifo_mosi.awburst  = eth_fifo_s_awburst;
-    eth_fifo_mosi.awlock   = eth_fifo_s_awlock;
-    eth_fifo_mosi.awcache  = eth_fifo_s_awcache;
-    eth_fifo_mosi.awprot   = eth_fifo_s_awprot;
-    eth_fifo_mosi.awqos    = eth_fifo_s_awqos;
-    eth_fifo_mosi.awregion = eth_fifo_s_awregion;
-    eth_fifo_mosi.awuser   = eth_fifo_s_awuser;
-    eth_fifo_mosi.awvalid  = eth_fifo_s_awvalid;
-    eth_fifo_mosi.wdata    = eth_fifo_s_wdata;
-    eth_fifo_mosi.wstrb    = eth_fifo_s_wstrb;
-    eth_fifo_mosi.wlast    = eth_fifo_s_wlast;
-    eth_fifo_mosi.wuser    = eth_fifo_s_wuser;
-    eth_fifo_mosi.wvalid   = eth_fifo_s_wvalid;
-    eth_fifo_mosi.bready   = eth_fifo_s_bready;
-    eth_fifo_mosi.arid     = eth_fifo_s_arid;
-    eth_fifo_mosi.araddr   = eth_fifo_s_araddr;
-    eth_fifo_mosi.arlen    = eth_fifo_s_arlen;
-    eth_fifo_mosi.arsize   = eth_fifo_s_arsize;
-    eth_fifo_mosi.arburst  = eth_fifo_s_arburst;
-    eth_fifo_mosi.arlock   = eth_fifo_s_arlock;
-    eth_fifo_mosi.arcache  = eth_fifo_s_arcache;
-    eth_fifo_mosi.arprot   = eth_fifo_s_arprot;
-    eth_fifo_mosi.arqos    = eth_fifo_s_arqos;
-    eth_fifo_mosi.arregion = eth_fifo_s_arregion;
-    eth_fifo_mosi.aruser   = eth_fifo_s_aruser;
-    eth_fifo_mosi.arvalid  = eth_fifo_s_arvalid;
-    eth_fifo_mosi.rready   = eth_fifo_s_rready;
+    // Slave INFIFO AXI4 I/F
+    eth_infifo_mosi.awid     = eth_infifo_s_awid;
+    eth_infifo_mosi.awaddr   = eth_infifo_s_awaddr;
+    eth_infifo_mosi.awlen    = eth_infifo_s_awlen;
+    eth_infifo_mosi.awsize   = eth_infifo_s_awsize;
+    eth_infifo_mosi.awburst  = eth_infifo_s_awburst;
+    eth_infifo_mosi.awlock   = eth_infifo_s_awlock;
+    eth_infifo_mosi.awcache  = eth_infifo_s_awcache;
+    eth_infifo_mosi.awprot   = eth_infifo_s_awprot;
+    eth_infifo_mosi.awqos    = eth_infifo_s_awqos;
+    eth_infifo_mosi.awregion = eth_infifo_s_awregion;
+    eth_infifo_mosi.awuser   = eth_infifo_s_awuser;
+    eth_infifo_mosi.awvalid  = eth_infifo_s_awvalid;
+    eth_infifo_mosi.wdata    = eth_infifo_s_wdata;
+    eth_infifo_mosi.wstrb    = eth_infifo_s_wstrb;
+    eth_infifo_mosi.wlast    = eth_infifo_s_wlast;
+    eth_infifo_mosi.wuser    = eth_infifo_s_wuser;
+    eth_infifo_mosi.wvalid   = eth_infifo_s_wvalid;
+    eth_infifo_mosi.bready   = eth_infifo_s_bready;
+    eth_infifo_mosi.arid     = eth_infifo_s_arid;
+    eth_infifo_mosi.araddr   = eth_infifo_s_araddr;
+    eth_infifo_mosi.arlen    = eth_infifo_s_arlen;
+    eth_infifo_mosi.arsize   = eth_infifo_s_arsize;
+    eth_infifo_mosi.arburst  = eth_infifo_s_arburst;
+    eth_infifo_mosi.arlock   = eth_infifo_s_arlock;
+    eth_infifo_mosi.arcache  = eth_infifo_s_arcache;
+    eth_infifo_mosi.arprot   = eth_infifo_s_arprot;
+    eth_infifo_mosi.arqos    = eth_infifo_s_arqos;
+    eth_infifo_mosi.arregion = eth_infifo_s_arregion;
+    eth_infifo_mosi.aruser   = eth_infifo_s_aruser;
+    eth_infifo_mosi.arvalid  = eth_infifo_s_arvalid;
+    eth_infifo_mosi.rready   = eth_infifo_s_rready;
 
-    eth_fifo_s_awready = eth_fifo_miso.awready;
-    eth_fifo_s_wready  = eth_fifo_miso.wready;
-    eth_fifo_s_bid     = eth_fifo_miso.bid;
-    eth_fifo_s_bresp   = eth_fifo_miso.bresp;
-    eth_fifo_s_buser   = eth_fifo_miso.buser;
-    eth_fifo_s_bvalid  = eth_fifo_miso.bvalid;
-    eth_fifo_s_arready = eth_fifo_miso.arready;
-    eth_fifo_s_rid     = eth_fifo_miso.rid;
-    eth_fifo_s_rdata   = eth_fifo_miso.rdata;
-    eth_fifo_s_rresp   = eth_fifo_miso.rresp;
-    eth_fifo_s_rlast   = eth_fifo_miso.rlast;
-    eth_fifo_s_ruser   = eth_fifo_miso.ruser;
-    eth_fifo_s_rvalid  = eth_fifo_miso.rvalid;
+    eth_infifo_s_awready = eth_infifo_miso.awready;
+    eth_infifo_s_wready  = eth_infifo_miso.wready;
+    eth_infifo_s_bid     = eth_infifo_miso.bid;
+    eth_infifo_s_bresp   = eth_infifo_miso.bresp;
+    eth_infifo_s_buser   = eth_infifo_miso.buser;
+    eth_infifo_s_bvalid  = eth_infifo_miso.bvalid;
+    eth_infifo_s_arready = eth_infifo_miso.arready;
+    eth_infifo_s_rid     = eth_infifo_miso.rid;
+    eth_infifo_s_rdata   = eth_infifo_miso.rdata;
+    eth_infifo_s_rresp   = eth_infifo_miso.rresp;
+    eth_infifo_s_rlast   = eth_infifo_miso.rlast;
+    eth_infifo_s_ruser   = eth_infifo_miso.ruser;
+    eth_infifo_s_rvalid  = eth_infifo_miso.rvalid;
+
+    // Slave OUTFIFO AXI4 I/F
+    eth_outfifo_mosi.awid     = eth_outfifo_s_awid;
+    eth_outfifo_mosi.awaddr   = eth_outfifo_s_awaddr;
+    eth_outfifo_mosi.awlen    = eth_outfifo_s_awlen;
+    eth_outfifo_mosi.awsize   = eth_outfifo_s_awsize;
+    eth_outfifo_mosi.awburst  = eth_outfifo_s_awburst;
+    eth_outfifo_mosi.awlock   = eth_outfifo_s_awlock;
+    eth_outfifo_mosi.awcache  = eth_outfifo_s_awcache;
+    eth_outfifo_mosi.awprot   = eth_outfifo_s_awprot;
+    eth_outfifo_mosi.awqos    = eth_outfifo_s_awqos;
+    eth_outfifo_mosi.awregion = eth_outfifo_s_awregion;
+    eth_outfifo_mosi.awuser   = eth_outfifo_s_awuser;
+    eth_outfifo_mosi.awvalid  = eth_outfifo_s_awvalid;
+    eth_outfifo_mosi.wdata    = eth_outfifo_s_wdata;
+    eth_outfifo_mosi.wstrb    = eth_outfifo_s_wstrb;
+    eth_outfifo_mosi.wlast    = eth_outfifo_s_wlast;
+    eth_outfifo_mosi.wuser    = eth_outfifo_s_wuser;
+    eth_outfifo_mosi.wvalid   = eth_outfifo_s_wvalid;
+    eth_outfifo_mosi.bready   = eth_outfifo_s_bready;
+    eth_outfifo_mosi.arid     = eth_outfifo_s_arid;
+    eth_outfifo_mosi.araddr   = eth_outfifo_s_araddr;
+    eth_outfifo_mosi.arlen    = eth_outfifo_s_arlen;
+    eth_outfifo_mosi.arsize   = eth_outfifo_s_arsize;
+    eth_outfifo_mosi.arburst  = eth_outfifo_s_arburst;
+    eth_outfifo_mosi.arlock   = eth_outfifo_s_arlock;
+    eth_outfifo_mosi.arcache  = eth_outfifo_s_arcache;
+    eth_outfifo_mosi.arprot   = eth_outfifo_s_arprot;
+    eth_outfifo_mosi.arqos    = eth_outfifo_s_arqos;
+    eth_outfifo_mosi.arregion = eth_outfifo_s_arregion;
+    eth_outfifo_mosi.aruser   = eth_outfifo_s_aruser;
+    eth_outfifo_mosi.arvalid  = eth_outfifo_s_arvalid;
+    eth_outfifo_mosi.rready   = eth_outfifo_s_rready;
+
+    eth_outfifo_s_awready = eth_outfifo_miso.awready;
+    eth_outfifo_s_wready  = eth_outfifo_miso.wready;
+    eth_outfifo_s_bid     = eth_outfifo_miso.bid;
+    eth_outfifo_s_bresp   = eth_outfifo_miso.bresp;
+    eth_outfifo_s_buser   = eth_outfifo_miso.buser;
+    eth_outfifo_s_bvalid  = eth_outfifo_miso.bvalid;
+    eth_outfifo_s_arready = eth_outfifo_miso.arready;
+    eth_outfifo_s_rid     = eth_outfifo_miso.rid;
+    eth_outfifo_s_rdata   = eth_outfifo_miso.rdata;
+    eth_outfifo_s_rresp   = eth_outfifo_miso.rresp;
+    eth_outfifo_s_rlast   = eth_outfifo_miso.rlast;
+    eth_outfifo_s_ruser   = eth_outfifo_miso.ruser;
+    eth_outfifo_s_rvalid  = eth_outfifo_miso.rvalid;
   end
 
   ethernet_wrapper u_eth(
-    .clk             (clk),
-    .rst             (rst),
+    .clk               (clk),
+    .rst               (rst),
     // CSR AXIL I/F
-    .eth_csr_mosi_i  (eth_csr_mosi),
-    .eth_csr_miso_o  (eth_csr_miso),
-    // Slave AXI FIFO
-    .eth_fifo_mosi_i (eth_fifo_mosi),
-    .eth_fifo_miso_o (eth_fifo_miso),
+    .eth_csr_mosi_i    (eth_csr_mosi),
+    .eth_csr_miso_o    (eth_csr_miso),
+    // Slave AXI FIFOs
+    .eth_infifo_mosi_i (eth_infifo_mosi),
+    .eth_infifo_miso_o (eth_infifo_miso),
+    .eth_outfifo_mosi_i(eth_outfifo_mosi),
+    .eth_outfifo_miso_o(eth_outfifo_miso),
     // Ethernet: 100BASE-T MII
-    .phy_ref_clk     (phy_ref_clk),
-    .phy_rx_clk      (phy_rx_clk),
-    .phy_rxd         (phy_rxd),
-    .phy_rx_dv       (phy_rx_dv),
-    .phy_rx_er       (phy_rx_er),
-    .phy_tx_clk      (phy_tx_clk),
-    .phy_txd         (phy_txd),
-    .phy_tx_en       (phy_tx_en),
-    .phy_col         (phy_col),
-    .phy_crs         (phy_crs),
-    .phy_reset_n     (phy_reset_n),
-    .pkt_recv_o      (pkt_recv)
+    .phy_ref_clk       (phy_ref_clk),
+    .phy_rx_clk        (phy_rx_clk),
+    .phy_rxd           (phy_rxd),
+    .phy_rx_dv         (phy_rx_dv),
+    .phy_rx_er         (phy_rx_er),
+    .phy_tx_clk        (phy_tx_clk),
+    .phy_txd           (phy_txd),
+    .phy_tx_en         (phy_tx_en),
+    .phy_col           (phy_col),
+    .phy_crs           (phy_crs),
+    .phy_reset_n       (phy_reset_n),
+    // IRQ
+    .pkt_recv_o        (pkt_recv),
+    .pkt_sent_o        (pkt_sent)
   );
 endmodule

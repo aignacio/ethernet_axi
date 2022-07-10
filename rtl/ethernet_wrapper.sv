@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 07.07.2022
+ * Last Modified Date: 10.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -13,9 +13,12 @@ module ethernet_wrapper
   // CSR I/F
   input   s_axil_mosi_t eth_csr_mosi_i,
   output  s_axil_miso_t eth_csr_miso_o,
-  // Slave FIFO I/F
-  input   s_axi_mosi_t  eth_fifo_mosi_i,
-  output  s_axi_miso_t  eth_fifo_miso_o,
+  // Slave inFIFO I/F
+  input   s_axi_mosi_t  eth_infifo_mosi_i,
+  output  s_axi_miso_t  eth_infifo_miso_o,
+  // Slave outFIFO I/F
+  input   s_axi_mosi_t  eth_outfifo_mosi_i,
+  output  s_axi_miso_t  eth_outfifo_miso_o,
   // Ethernet: 100BASE-T MII
   output  logic         phy_ref_clk, // 25MHz
   input                 phy_rx_clk,
@@ -28,7 +31,9 @@ module ethernet_wrapper
   input                 phy_col,
   input                 phy_crs,
   output  logic         phy_reset_n,
-  output  logic         pkt_recv_o
+  // IRQs
+  output  logic         pkt_recv_o,
+  output  logic         pkt_sent_o
 );
   s_eth_cfg_t local_cfg;
 
@@ -73,8 +78,6 @@ module ethernet_wrapper
   assign phy_reset_n = !rst;
   // TODO: Added mmcm clock of 25MHz
   assign phy_ref_clk = clk;
-  // TODO: IRQ packet received
-  assign pkt_recv_o = irq_ff;
 
   /* verilator lint_off WIDTH */
   eth_csr #(
@@ -115,15 +118,33 @@ module ethernet_wrapper
     .i_recv_mac_high                        (recv_udp_ff.mac[47:24]),
     .i_recv_ip                              (recv_udp_ff.ip),
     .i_recv_udp_length                      (recv_udp_ff.length),
+    .i_recv_udp_src_port                    (recv_udp_ff.src_port),
+    .i_recv_udp_dst_port                    (recv_udp_ff.dst_port),
+    .o_recv_fifo_clear                      (),
+    .o_recv_fifo_clear_write_trigger        (infifo_cmd.clear),
+    .i_recv_fifo_rd_ptr                     (infifo_status.rd_ptr),
+    .i_recv_fifo_wr_ptr                     (infifo_status.wr_ptr),
+    .i_recv_fifo_full                       (infifo_status.full),
+    .i_recv_fifo_empty                      (infifo_status.empty),
+
     .o_send_mac_low                         (send_udp.mac[23:0]),
     .o_send_mac_high                        (send_udp.mac[47:24]),
-    .o_send_ip                              (send_udp),
-    .o_send_udp_length                      (),
+    .o_send_ip                              (send_udp.ip),
+    .o_send_udp_length                      (send_udp.length),
+    .o_send_src_port                        (send_udp.src_port),
+    .o_send_dst_port                        (send_udp.dst_port),
     .o_send_pkt                             (),
+    .o_send_pkt_write_trigger               (send_pkt),
     .o_clear_irq                            (),
     .o_clear_irq_write_trigger              (clear_irq),
     .o_clear_arp                            (),
-    .o_clear_arp_write_trigger              (clear_arp_cache)
+    .o_clear_arp_write_trigger              (clear_arp_cache),
+    .o_send_fifo_clear                      (),
+    .o_send_fifo_clear_write_trigger        (outfifo_cmd.clear),
+    .i_send_fifo_rd_ptr                     (outfifo_status.rd_ptr),
+    .i_send_fifo_wr_ptr                     (outfifo_status.wr_ptr),
+    .i_send_fifo_full                       (outfifo_status.full),
+    .i_send_fifo_empty                      (outfifo_status.empty)
   );
   /* verilator lint_on WIDTH */
 
@@ -303,22 +324,22 @@ module ethernet_wrapper
     .m_ip_payload_axis_tlast                (),
     .m_ip_payload_axis_tuser                (),
     // UDP frame input
-    .s_udp_hdr_valid                        ('0),
-    .s_udp_hdr_ready                        (),
+    .s_udp_hdr_valid                        (send_pkt_ff),
+    .s_udp_hdr_ready                        (udp_hdr_ready),
     .s_udp_ip_dscp                          ('0),
     .s_udp_ip_ecn                           ('0),
-    .s_udp_ip_ttl                           ('0),
-    .s_udp_ip_source_ip                     ('0),
-    .s_udp_ip_dest_ip                       ('0),
-    .s_udp_source_port                      ('0),
-    .s_udp_dest_port                        ('0),
-    .s_udp_length                           ('0),
+    .s_udp_ip_ttl                           ('d64),
+    .s_udp_ip_source_ip                     (local_cfg.ip),
+    .s_udp_ip_dest_ip                       (send_udp.ip),
+    .s_udp_source_port                      (send_udp.src_port),
+    .s_udp_dest_port                        (send_udp.dst_port),
+    .s_udp_length                           (send_udp.length),
     .s_udp_checksum                         ('0),
-    .s_udp_payload_axis_tdata               ('0),
-    .s_udp_payload_axis_tvalid              ('0),
-    .s_udp_payload_axis_tready              (),
-    .s_udp_payload_axis_tlast               ('0),
-    .s_udp_payload_axis_tuser               ('0),
+    .s_udp_payload_axis_tdata               (axis_mosi_frame_input.tdata),
+    .s_udp_payload_axis_tvalid              (axis_mosi_frame_input.tvalid),
+    .s_udp_payload_axis_tready              (axis_miso_frame_input.tready),
+    .s_udp_payload_axis_tlast               (axis_mosi_frame_input.tlast),
+    .s_udp_payload_axis_tuser               (axis_mosi_frame_input.tuser),
     // UDP frame output
     .m_udp_hdr_valid                        (udp_hdr_valid),
     .m_udp_hdr_ready                        ('1),
@@ -338,15 +359,15 @@ module ethernet_wrapper
     .m_udp_ip_header_checksum               (),
     .m_udp_ip_source_ip                     (recv_udp.ip),
     .m_udp_ip_dest_ip                       (),
-    .m_udp_source_port                      (),
-    .m_udp_dest_port                        (),
+    .m_udp_source_port                      (recv_udp.src_port),
+    .m_udp_dest_port                        (recv_udp.dst_port),
     .m_udp_length                           (recv_udp.length),
     .m_udp_checksum                         (),
-    .m_udp_payload_axis_tdata               (),
-    .m_udp_payload_axis_tvalid              (),
-    .m_udp_payload_axis_tready              ('1),
-    .m_udp_payload_axis_tlast               (),
-    .m_udp_payload_axis_tuser               (),
+    .m_udp_payload_axis_tdata               (axis_mosi_frame_output.tdata),
+    .m_udp_payload_axis_tvalid              (axis_mosi_frame_output.tvalid),
+    .m_udp_payload_axis_tready              (axis_miso_frame_output.tready),
+    .m_udp_payload_axis_tlast               (axis_mosi_frame_output.tlast),
+    .m_udp_payload_axis_tuser               (axis_mosi_frame_output.tuser),
     // Status signals
     .ip_rx_busy                             (),
     .ip_tx_busy                             (),
@@ -369,35 +390,119 @@ module ethernet_wrapper
     .clear_arp_cache                        (clear_arp_cache)
   );
 
-  s_eth_udp_t recv_udp_ff, next_recv;
-  s_eth_udp_t recv_udp;
-  s_eth_udp_t send_udp;
-  logic       irq_ff, next_irq;
-  logic       clear_irq;
-  logic       clear_arp_cache;
+  s_axis_mosi_t axis_mosi_frame_input;
+  s_axis_miso_t axis_miso_frame_input;
+
+  s_axis_mosi_t axis_mosi_frame_output;
+  s_axis_miso_t axis_miso_frame_output;
+
+  pkt_fifo #(
+    .FIFO_TYPE("IN")
+  ) u_infifo (
+    .clk           (clk),
+    .rst           (rst),
+    // Slave AXI I/F
+    .axi_mosi      (eth_infifo_mosi_i),
+    .axi_miso      (eth_infifo_miso_o),
+    // UDP Stream_In I/F
+    .axis_sin_mosi (axis_mosi_frame_output),
+    .axis_sin_miso (axis_miso_frame_output),
+    // UDP Stream_Out I/F
+    .axis_sout_mosi(),
+    .axis_sout_miso('0),
+    // FIFO status
+    .fifo_st_o     (infifo_status),
+    .fifo_cmd_i    (infifo_cmd)
+  );
+
+  pkt_fifo #(
+    .FIFO_TYPE("OUT")
+  ) u_outfifo (
+    .clk           (clk),
+    .rst           (rst),
+    // Slave AXI I/F
+    .axi_mosi      (eth_outfifo_mosi_i),
+    .axi_miso      (eth_outfifo_miso_o),
+    // UDP Stream_In I/F
+    .axis_sin_mosi ('0),
+    .axis_sin_miso (),
+    // UDP Stream_Out I/F
+    .axis_sout_mosi(axis_mosi_frame_input),
+    .axis_sout_miso(axis_miso_frame_input),
+    // FIFO status
+    .fifo_st_o     (outfifo_status),
+    .fifo_cmd_i    (outfifo_cmd)
+  );
+
+  s_eth_udp_t  recv_udp_ff, next_recv;
+  s_eth_udp_t  recv_udp;
+  s_eth_udp_t  send_udp;
+  logic        clear_irq;
+  logic        clear_arp_cache;
+  logic        send_pkt;
+  logic        send_pkt_ff, next_send_pkt;
+  logic        udp_hdr_ready;
+  logic        irq_rx_ff, next_rx_irq;
+  logic        irq_tx_ff, next_tx_irq;
+  s_fifo_st_t  infifo_status;
+  s_fifo_st_t  outfifo_status;
+  s_fifo_cmd_t infifo_cmd;
+  s_fifo_cmd_t outfifo_cmd;
 
   always_comb begin
+    next_rx_irq = irq_rx_ff;
+    pkt_recv_o = irq_rx_ff;
     next_recv = recv_udp_ff;
-    next_irq  = irq_ff;
+    infifo_cmd.start = 1'b0;
 
+    // Receive pkt
     if (udp_hdr_valid) begin
       next_recv = recv_udp;
-      next_irq  = 1'b1;
+    end
+
+    if (infifo_status.done) begin
+      next_rx_irq = 1'b1;
     end
 
     if (clear_irq) begin
-      next_irq = 1'b0;
+      next_rx_irq = 1'b0;
+    end
+
+    // Send PKt
+    next_send_pkt = send_pkt_ff;
+    next_tx_irq = irq_tx_ff;
+    pkt_sent_o = irq_tx_ff;
+    outfifo_cmd.start = send_pkt_ff;
+
+    if (send_pkt) begin
+      next_send_pkt = 1'b1;
+    end
+
+    if (send_pkt_ff) begin
+      next_send_pkt = udp_hdr_ready ? 1'b0 : 1'b1;
+    end
+
+    if (outfifo_status.done) begin
+      next_tx_irq = 1'b1;
+    end
+
+    if (clear_irq) begin
+      next_tx_irq = 1'b0;
     end
   end
 
   always_ff @ (posedge clk) begin
     if (rst) begin
       recv_udp_ff <= s_eth_udp_t'('0);
-      irq_ff      <= 1'b0;
+      irq_rx_ff   <= 1'b0;
+      irq_tx_ff   <= 1'b0;
+      send_pkt_ff <= 1'b0;
     end
     else begin
       recv_udp_ff <= next_recv;
-      irq_ff      <= next_irq;
+      irq_rx_ff   <= next_rx_irq;
+      irq_tx_ff   <= next_tx_irq;
+      send_pkt_ff <= next_send_pkt;
     end
   end
 endmodule

@@ -52,11 +52,11 @@
 
   `ifndef AXIS_TDST_WIDTH
     `define AXIS_TDST_WIDTH       1
-  `endif1
+  `endif
 
   `ifndef AXIS_TUSER_WIDTH
     `define AXIS_TUSER_WIDTH      1
-  `endif1
+  `endif
 
   typedef logic [`AXIS_DATA_WIDTH-1:0]     axis_data_t;
   typedef logic [`AXIS_DATA_WIDTH/8-1:0]   axis_strb_t;

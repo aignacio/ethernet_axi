@@ -4,7 +4,7 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 07.07.2022
+# Last Modified Date: 10.07.2022
 # Last Modified By  : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 import cocotb
 import pytest
@@ -16,12 +16,13 @@ from common.constants import cfg_const
 from cocotb.regression import TestFactory
 from cocotb_test.simulator import run
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, with_timeout, Event
+from cocotb.triggers import ClockCycles, with_timeout, Event, RisingEdge
 from cocotbext.axi import AxiBus, AxiLiteBus
 from cocotbext.axi import AxiMaster, AxiLiteMaster
 from cocotbext.eth import GmiiFrame, MiiPhy
 from scapy.layers.l2 import Ether, ARP
 from scapy.layers.inet import IP, UDP
+from cocotb.result import TestFailure
 
 async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_inserter=None):
     eth_flavor = os.getenv("FLAVOR")
@@ -36,9 +37,10 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     await ClockCycles(dut.clk, 3)
     dut.rst.setimmediatevalue(0)
 
-    eth_csr_if  = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk, dut.rst)
-    eth_fifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_fifo_s"), dut.clk, dut.rst)
-    mii_phy_if  = MiiPhy(dut.phy_txd, None, dut.phy_tx_en, dut.phy_tx_clk,
+    eth_csr_if     = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk, dut.rst)
+    eth_infifo_if  = AxiMaster(AxiBus.from_prefix(dut, "eth_infifo_s"), dut.clk, dut.rst)
+    eth_outfifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_outfifo_s"), dut.clk, dut.rst)
+    mii_phy_if     = MiiPhy(dut.phy_txd, None, dut.phy_tx_en, dut.phy_tx_clk,
                             dut.phy_rxd, dut.phy_rx_er, dut.phy_rx_dv, dut.phy_rx_clk, speed=100e6)
 
     dut.phy_crs.setimmediatevalue(0)
@@ -48,8 +50,8 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     #    ETH CSR read access    #
     #############################
     eth_csr = {}
-    for i in range(16):
-        eth_csr['csr_'+str(i)] = i*0x8
+    for i in range(30):
+        eth_csr['csr_'+str(i)] = i*0x4
     for csr in eth_csr:
         log.info("CSR [Addr: %s]", hex(eth_csr[csr]))
         read = eth_csr_if.init_read(address=eth_csr[csr], length=4)
@@ -69,11 +71,33 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     timeout_cnt = 0
     while int(dut.pkt_recv) == 0:
         await RisingEdge(dut.clk)
-        if timeout_cnt == noc_const.TIMEOUT_VAL:
+        if timeout_cnt == cfg_const.TIMEOUT_VAL:
             log.error("Timeout on waiting for an IRQ")
             raise TestFailure("Timeout on waiting for an IRQ")
         else:
             timeout_cnt += 1
+
+    data_udp = []
+    for i in range(256//4):
+        read = eth_infifo_if.init_read(address=0x00, length=4)
+        await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
+        data_udp.append(int.from_bytes(read.data.data, byteorder='little', signed=False))
+
+    for i in data_udp:
+        payload = i.to_bytes(4,'little')
+        write = eth_outfifo_if.init_write(address=0x00, data=payload)
+        await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+
+    # Prepare to send the pkt again
+    read = eth_csr_if.init_read(address=0x14, length=4)
+    await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
+    mac_low = int.from_bytes(read.data.data, byteorder='little', signed=False)
+    read = eth_csr_if.init_read(address=0x18, length=4)
+    await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
+    mac_high = int.from_bytes(read.data.data, byteorder='little', signed=False)
+
+    dst_mac = mac_low|(mac_high << 24);
+    print("Destination MAC addr = %s"%hex(dst_mac))
 
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])
