@@ -4,7 +4,7 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 10.07.2022
+# Last Modified Date: 11.07.2022
 # Last Modified By  : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 import cocotb
 import pytest
@@ -61,7 +61,7 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
 
     log.info("Test UDP RX packet")
     payload = bytes([x % 256 for x in range(256)])
-    eth = Ether(src='5a:51:52:53:54:55', dst='1D:EE:69:DE:F0:61')
+    eth = Ether(src='5a:51:52:53:54:55', dst='1d:ee:69:de:f0:61')
     ip = IP(src='192.168.0.100', dst='192.168.0.211')
     udp = UDP(sport=5678, dport=1234)
     test_pkt = eth / ip / udp / payload
@@ -84,27 +84,78 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     write = eth_outfifo_if.init_write(address=0x00, data=data_udp)
     await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
 
-    # data_udp = []
-    # for i in range(256//4):
-        # read = eth_infifo_if.init_read(address=0x00, length=4)
-        # await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
-        # data_udp.append(int.from_bytes(read.data.data, byteorder='little', signed=False))
-
-    # for i in data_udp:
-        # payload = i.to_bytes(4,'little')
-        # write = eth_outfifo_if.init_write(address=0x00, data=payload)
-        # await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
-
-    # Prepare to send the pkt again
+    # RW MAC Address
     read = eth_csr_if.init_read(address=0x14, length=4)
     await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
-    mac_low = int.from_bytes(read.data.data, byteorder='little', signed=False)
+    mac_low = read.data.data
     read = eth_csr_if.init_read(address=0x18, length=4)
     await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
-    mac_high = int.from_bytes(read.data.data, byteorder='little', signed=False)
+    mac_high = read.data.data
+    write = eth_csr_if.init_write(address=0x40, data=mac_low)
+    await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+    write = eth_csr_if.init_write(address=0x44, data=mac_high)
+    await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
 
-    dst_mac = mac_low|(mac_high << 24);
-    print("Destination MAC addr = %s"%hex(dst_mac))
+    # RW IP address
+    read = eth_csr_if.init_read(address=0x1C, length=4)
+    await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
+    ip_dst = read.data.data
+    write = eth_csr_if.init_write(address=0x48, data=ip_dst)
+    await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+
+    # W src/dst port
+    src_port = 2020
+    src_port = src_port.to_bytes(4,'little')
+    write = eth_csr_if.init_write(address=0x50, data=src_port)
+    await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+    dst_port = 2222
+    dst_port = dst_port.to_bytes(4,'little')
+    write = eth_csr_if.init_write(address=0x54, data=dst_port)
+    await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+
+    # Set length
+    udp_length = 256
+    udp_length = udp_length.to_bytes(4,'little')
+    write = eth_csr_if.init_write(address=0x4c, data=udp_length)
+    await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+
+    # Send pkt
+    val = 1
+    val = val.to_bytes(4,'little')
+    write = eth_csr_if.init_write(address=0x6c, data=val)
+    await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
+
+    log.info("Receive ARP request")
+    rx_frame = await mii_phy_if.tx.recv()
+    rx_pkt = Ether(bytes(rx_frame.get_payload()))
+    log.info("RX packet: %s", repr(rx_pkt))
+
+    assert rx_pkt.dst == 'ff:ff:ff:ff:ff:ff'
+    assert rx_pkt.src == test_pkt.dst
+    assert rx_pkt[ARP].hwtype == 1
+    assert rx_pkt[ARP].ptype == 0x0800
+    assert rx_pkt[ARP].hwlen == 6
+    assert rx_pkt[ARP].plen == 4
+    assert rx_pkt[ARP].op == 1
+    assert rx_pkt[ARP].hwsrc == test_pkt.dst
+    assert rx_pkt[ARP].psrc == test_pkt[IP].dst
+    assert rx_pkt[ARP].hwdst == '00:00:00:00:00:00'
+    assert rx_pkt[ARP].pdst == test_pkt[IP].src
+
+    log.info("send ARP response")
+    eth = Ether(src=test_pkt.src, dst=test_pkt.dst)
+    arp = ARP(hwtype=1, ptype=0x0800, hwlen=6, plen=4, op=2,
+        hwsrc=test_pkt.src, psrc=test_pkt[IP].src,
+        hwdst=test_pkt.dst, pdst=test_pkt[IP].dst)
+    resp_pkt = eth / arp
+    resp_frame = GmiiFrame.from_payload(resp_pkt.build())
+    await mii_phy_if.rx.send(resp_frame)
+
+    log.info("Receive UDP packet")
+    rx_frame = await mii_phy_if.tx.recv()
+    rx_pkt = Ether(bytes(rx_frame.get_payload()))
+    log.info("RX packet: %s", repr(rx_pkt))
+    assert rx_pkt[UDP].payload == test_pkt[UDP].payload
 
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])

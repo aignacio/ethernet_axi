@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 10.07.2022
+ * Last Modified Date: 11.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -473,6 +473,7 @@ module ethernet_wrapper
     next_tx_irq = irq_tx_ff;
     pkt_sent_o = irq_tx_ff;
     outfifo_cmd.start = send_pkt_ff;
+    outfifo_cmd.length = send_udp.length;
 
     if (send_pkt) begin
       next_send_pkt = 1'b1;

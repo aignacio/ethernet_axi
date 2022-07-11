@@ -1,25 +1,27 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Sun Jul 10 18:23:13 2022
+[*] Mon Jul 11 12:47:22 2022
 [*]
 [dumpfile] "/Users/aignacio/projects/ethernet_axi/run_dir/run_verilator_test_eth_arty/dump.fst"
-[dumpfile_mtime] "Sun Jul 10 14:33:01 2022"
-[dumpfile_size] 136236
+[dumpfile_mtime] "Mon Jul 11 12:45:29 2022"
+[dumpfile_size] 215738
 [savefile] "/Users/aignacio/projects/ethernet_axi/tmpl.gtkw"
-[timestart] 31095000
+[timestart] 0
 [size] 1680 998
-[pos] 0 156
-*-17.643089 31570000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] 0 237
+*-23.923664 34370000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] .
 [treeopen] .tb_eth.
 [treeopen] .tb_eth.u_eth.
+[treeopen] .tb_eth.u_eth.u_infifo.
 [treeopen] .tb_eth.u_eth.u_outfifo.
 [sst_width] 307
 [signals_width] 383
 [sst_expanded] 1
-[sst_vpaned_height] 339
-@28
+[sst_vpaned_height] 363
+@29
 tb_eth.clk
+@28
 tb_eth.rst
 tb_eth.u_eth.pkt_recv_o
 tb_eth.u_eth.pkt_sent_o
@@ -152,6 +154,7 @@ tb_eth.u_eth.u_udp_complete.s_udp_source_port[15:0]
 @1401200
 -s_udp
 @28
+tb_eth.u_eth.u_infifo.fifo_st_o.empty
 tb_eth.u_eth.u_infifo.axis_write
 @22
 tb_eth.u_eth.u_infifo.wr_ptr_ff[11:0]
@@ -174,9 +177,10 @@ tb_eth.u_eth.u_infifo.axi_miso.rdata[31:0]
 -infifo
 @800200
 -outfifo
-@23
+@28
+tb_eth.u_eth.u_outfifo.fifo_st_o.empty
+@24
 tb_eth.u_eth.u_outfifo.wr_ptr_ff[11:0]
-@22
 tb_eth.u_eth.u_outfifo.rd_ptr_ff[11:0]
 @28
 tb_eth.u_eth.u_outfifo.axi_mosi.awvalid
@@ -196,6 +200,13 @@ tb_eth.u_eth.u_outfifo.axi_miso.bid[7:0]
 @28
 tb_eth.u_eth.u_outfifo.axi_miso.bvalid
 tb_eth.u_eth.u_outfifo.axi_mosi.bready
+@22
+tb_eth.u_eth.u_outfifo.axis_sout_mosi.tdata[7:0]
+tb_eth.u_eth.u_outfifo.axis_sout_mosi.tid[7:0]
+@28
+tb_eth.u_eth.u_outfifo.axis_sout_mosi.tlast
+tb_eth.u_eth.u_outfifo.axis_sout_mosi.tvalid
+tb_eth.u_eth.u_outfifo.axis_sout_miso.tready
 @1000200
 -outfifo
 [pattern_trace] 1

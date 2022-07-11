@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 08.07.2022
- * Last Modified Date: 10.07.2022
+ * Last Modified Date: 11.07.2022
  */
 module pkt_fifo
   import utils_pkg::*;
@@ -157,9 +157,10 @@ module pkt_fifo
           'd3:  axis_sout_mosi.tdata = rd_mem_data[31:24];
         endcase
 
-        if (axis_sout_miso.tready) begin
+        if (axis_sout_miso.tready && ~axis_sout_mosi.tlast) begin
           axis_read = 1'b1;
           next_len  = len_cnt_ff + 'd1;
+          next_lsb  = rd_ptr_ff[1:0];
         end
       end
     end
