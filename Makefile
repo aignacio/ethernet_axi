@@ -4,7 +4,7 @@
 # Date              : 07.06.2022
 # Last Modified Date: 11.07.2022
 GTKWAVE_PRE	:=	/Applications/gtkwave.app/Contents/Resources/bin/
-SPEC_TEST		?=	-k test_full_fifo[arty]
+SPEC_TEST		?=	#-k test_full_fifo[arty]
 RUN_CMD			:=	docker run --rm --name eth_run 		\
 								-v $(abspath .):/ethernet_axi -w	\
 								/ethernet_axi aignacio/axi_dma
