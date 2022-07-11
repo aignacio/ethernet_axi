@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-# File              : test_eth.py
+# File              : test_single_pkt.py
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
@@ -42,6 +42,22 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     eth_outfifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_outfifo_s"), dut.clk, dut.rst)
     mii_phy_if     = MiiPhy(dut.phy_txd, None, dut.phy_tx_en, dut.phy_tx_clk,
                             dut.phy_rxd, dut.phy_rx_er, dut.phy_rx_dv, dut.phy_rx_clk, speed=100e6)
+
+    if idle_inserter:
+        eth_infifo_if.write_if.aw_channel.set_pause_generator(idle_inserter())
+        eth_infifo_if.write_if.w_channel.set_pause_generator(idle_inserter())
+        eth_infifo_if.read_if.ar_channel.set_pause_generator(idle_inserter())
+
+        eth_outfifo_if.write_if.aw_channel.set_pause_generator(idle_inserter())
+        eth_outfifo_if.write_if.w_channel.set_pause_generator(idle_inserter())
+        eth_outfifo_if.read_if.ar_channel.set_pause_generator(idle_inserter())
+
+    if backpressure_inserter:
+        eth_infifo_if.write_if.b_channel.set_pause_generator(backpressure_inserter())
+        eth_infifo_if.read_if.r_channel.set_pause_generator(backpressure_inserter())
+
+        eth_outfifo_if.write_if.b_channel.set_pause_generator(backpressure_inserter())
+        eth_outfifo_if.read_if.r_channel.set_pause_generator(backpressure_inserter())
 
     dut.phy_crs.setimmediatevalue(0)
     dut.phy_col.setimmediatevalue(0)
@@ -162,12 +178,12 @@ def cycle_pause():
 
 if cocotb.SIM_NAME:
     factory = TestFactory(test_function=run_test)
-    # factory.add_option("idle_inserter", [None, cycle_pause])
-    # factory.add_option("backpressure_inserter", [None, cycle_pause])
+    factory.add_option("idle_inserter", [None, cycle_pause])
+    factory.add_option("backpressure_inserter", [None, cycle_pause])
     factory.generate_tests()
 
 @pytest.mark.parametrize("flavor",cfg_const.regression_setup)
-def test_eth(flavor):
+def test_single_pkt(flavor):
     module = os.path.splitext(os.path.basename(__file__))[0]
     SIM_BUILD = os.path.join(cfg_const.TESTS_DIR,
             f"../../run_dir/run_{cfg_const.SIMULATOR}_{module}_{flavor}")

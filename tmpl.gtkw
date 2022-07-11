@@ -1,14 +1,14 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Mon Jul 11 12:47:22 2022
+[*] Mon Jul 11 17:57:36 2022
 [*]
-[dumpfile] "/Users/aignacio/projects/ethernet_axi/run_dir/run_verilator_test_eth_arty/dump.fst"
-[dumpfile_mtime] "Mon Jul 11 12:45:29 2022"
-[dumpfile_size] 215738
+[dumpfile] "/Users/aignacio/projects/ethernet_axi/run_dir/run_verilator_test_full_fifo_arty/dump.fst"
+[dumpfile_mtime] "Mon Jul 11 17:53:56 2022"
+[dumpfile_size] 110644
 [savefile] "/Users/aignacio/projects/ethernet_axi/tmpl.gtkw"
 [timestart] 0
 [size] 1680 998
-[pos] 0 237
+[pos] 0 264
 *-23.923664 34370000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] .
 [treeopen] .tb_eth.
@@ -18,10 +18,9 @@
 [sst_width] 307
 [signals_width] 383
 [sst_expanded] 1
-[sst_vpaned_height] 363
-@29
-tb_eth.clk
+[sst_vpaned_height] 389
 @28
+tb_eth.clk
 tb_eth.rst
 tb_eth.u_eth.pkt_recv_o
 tb_eth.u_eth.pkt_sent_o
@@ -66,7 +65,7 @@ tb_eth.eth_csr_miso.rvalid
 tb_eth.eth_csr_miso.wready
 @1401200
 -eth_csr
-@c00200
+@800200
 -phy_mii
 @28
 tb_eth.phy_col
@@ -85,7 +84,7 @@ tb_eth.phy_tx_en
 tb_eth.phy_txd[3:0]
 @28
 tb_eth.pkt_recv
-@1401200
+@1000200
 -phy_mii
 @c00200
 -m_udp
@@ -161,6 +160,14 @@ tb_eth.u_eth.u_infifo.wr_ptr_ff[11:0]
 tb_eth.u_eth.u_infifo.wr_mem_data[31:0]
 @800200
 -infifo
+@22
+tb_eth.u_eth.u_infifo.fifo_st_o.rd_ptr[11:0]
+tb_eth.u_eth.u_infifo.fifo_st_o.wr_ptr[11:0]
+@28
+tb_eth.u_eth.u_infifo.fifo_st_o.done
+tb_eth.u_eth.u_infifo.fifo_st_o.empty
+@29
+tb_eth.u_eth.u_infifo.fifo_st_o.full
 @28
 tb_eth.u_eth.u_infifo.axi_mosi.arvalid
 @100000028
@@ -175,7 +182,7 @@ tb_eth.u_eth.u_infifo.axi_miso.rlast
 tb_eth.u_eth.u_infifo.axi_miso.rdata[31:0]
 @1000200
 -infifo
-@800200
+@c00200
 -outfifo
 @28
 tb_eth.u_eth.u_outfifo.fifo_st_o.empty
@@ -207,7 +214,7 @@ tb_eth.u_eth.u_outfifo.axis_sout_mosi.tid[7:0]
 tb_eth.u_eth.u_outfifo.axis_sout_mosi.tlast
 tb_eth.u_eth.u_outfifo.axis_sout_mosi.tvalid
 tb_eth.u_eth.u_outfifo.axis_sout_miso.tready
-@1000200
+@1401200
 -outfifo
 [pattern_trace] 1
 [pattern_trace] 0
