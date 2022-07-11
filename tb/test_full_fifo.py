@@ -93,7 +93,7 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
        else:
            timeout_cnt += 1
 
-    read = eth_infifo_if.init_read(address=0x00, length=64*4)
+    read = eth_infifo_if.init_read(address=0x00, length=1024)
     await with_timeout(read.wait(), *cfg_const.TIMEOUT_AXI)
     data_udp = read.data.data
 

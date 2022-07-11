@@ -73,11 +73,11 @@ module pkt_fifo
     fifo_st_o.empty  = (rd_ptr_ff == wr_ptr_ff);
 
     if (FIFO_TYPE == "IN") begin
-      fifo_st_o.full = ((rd_ptr_ff-wr_ptr_ff) == INFIFO_KB_SIZE*1024);
+      fifo_st_o.full = ((wr_ptr_ff-rd_ptr_ff) == INFIFO_KB_SIZE*1024);
       fifo_st_o.done = axis_sin_mosi.tvalid && axis_sin_mosi.tlast && axis_sin_miso.tready;
     end
     else begin
-      fifo_st_o.full = ((rd_ptr_ff-wr_ptr_ff) == OUTFIFO_KB_SIZE*1024);
+      fifo_st_o.full = ((wr_ptr_ff-rd_ptr_ff) == OUTFIFO_KB_SIZE*1024);
     end
   end
 
