@@ -1,3 +1,5 @@
+[![Regression Tests](https://github.com/aignacio/ethernet_axi/actions/workflows/regression.yaml/badge.svg)](https://github.com/aignacio/ethernet_axi/actions/workflows/regression.yaml)
+
 # AXI Ethernet (UDP)
 
 ## Table of Contents

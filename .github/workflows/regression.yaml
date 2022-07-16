@@ -44,5 +44,5 @@ jobs:
       with:
         token: ${{ secrets.CODECOV }} # not required for public repos
         files: ./coverage.info
-        fail_ci_if_error: true
+        fail_ci_if_error: false
         verbose: true
