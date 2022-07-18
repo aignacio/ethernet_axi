@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 17.03.2022
- * Last Modified Date: 17.07.2022
+ * Last Modified Date: 18.07.2022
  */
 
 `default_nettype wire
@@ -32,13 +32,13 @@ module clk_mgmt(
     .BANDWIDTH           ("OPTIMIZED"),
     .COMPENSATION        ("ZHOLD"),
     .STARTUP_WAIT        ("FALSE"),
-    .DIVCLK_DIVIDE       (4),
+    .DIVCLK_DIVIDE       (2),
     .CLKFBOUT_MULT       (33),
     .CLKFBOUT_PHASE      (0.000),
     .CLKOUT0_DIVIDE      (33),
     .CLKOUT0_PHASE       (0.000),
     .CLKOUT0_DUTY_CYCLE  (0.500),
-    .CLKIN1_PERIOD       (10.000)
+    .CLKIN1_PERIOD       (20.000)
   ) plle2_adv_inst (
     .CLKFBOUT            (clkfbout_clk_wiz_2),
     .CLKOUT0             (clk_out_clk_wiz_2),
@@ -91,16 +91,16 @@ module clk_mgmt(
   logic        clk_in_pn;
 
   PLLE2_ADV#(
-    .BANDWIDTH            ("OPTIMIZED"),
-    .COMPENSATION         ("ZHOLD"),
-    .STARTUP_WAIT         ("FALSE"),
-    .DIVCLK_DIVIDE        (1),
-    .CLKFBOUT_MULT        (9),
-    .CLKFBOUT_PHASE       (0.000),
-    .CLKOUT0_DIVIDE       (10),
-    .CLKOUT0_PHASE        (0.000),
-    .CLKOUT0_DUTY_CYCLE   (0.500),
-    .CLKIN1_PERIOD        (10.000)
+    .BANDWIDTH           ("OPTIMIZED"),
+    .COMPENSATION        ("ZHOLD"),
+    .STARTUP_WAIT        ("FALSE"),
+    .DIVCLK_DIVIDE       (1),
+    .CLKFBOUT_MULT       (18),
+    .CLKFBOUT_PHASE      (0.000),
+    .CLKOUT0_DIVIDE      (10),
+    .CLKOUT0_PHASE       (0.000),
+    .CLKOUT0_DUTY_CYCLE  (0.500),
+    .CLKIN1_PERIOD       (20.000)
   ) plle2_adv_inst (
     .CLKFBOUT            (clkfbout_clk_wiz_2),
     .CLKOUT0             (clk_out_clk_wiz_2),
