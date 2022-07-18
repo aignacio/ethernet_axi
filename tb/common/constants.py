@@ -4,7 +4,7 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 16.07.2022
+# Last Modified Date: 18.07.2022
 import os
 import glob
 import copy
@@ -13,11 +13,17 @@ import math
 class cfg_const:
     regression_setup = ['arty', 'nexys']
 
-    NEXYS_VIDEO = {}
-    NEXYS_VIDEO['AXI_ADDR_WIDTH'] = 32
-
     ARTY = {}
     ARTY['AXI_ADDR_WIDTH'] = 32
+    ARTY['ETH_TARGET_FPGA_ARTY'] = 1
+
+    NEXYS_VIDEO = {}
+    NEXYS_VIDEO['AXI_ADDR_WIDTH'] = 32
+    NEXYS_VIDEO['ETH_TARGET_FPGA_NEXYSV'] = 1
+
+    KINTEX = {}
+    KINTEX['AXI_ADDR_WIDTH'] = 32
+    KINTEX['ETH_TARGET_FPGA_KINTEX'] = 1
     ################### Start Configure ####################
     CLK_100MHz  = (10, "ns")
     CLK_200MHz  = (5, "ns")
@@ -78,6 +84,12 @@ class cfg_const:
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/arp_eth_tx.v')
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/ssio_sdr_in.v')
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/lfsr.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/eth_mac_1g_rgmii_fifo.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/eth_mac_1g_rgmii.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/rgmii_phy_if.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/ssio_ddr_in.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/iddr.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/oddr.v')
     PATH_RUN        = str(os.getenv("PATH_RUN"))
     COMPILE_ARGS    = ["-f",os.path.join(PATH_RUN,"verilator.flags"),"--coverage","--coverage-line","--coverage-toggle"]
     if SIMULATOR == "verilator":
@@ -87,16 +99,22 @@ class cfg_const:
 
     ARTY_CFG = copy.deepcopy(EXTRA_ARGS)
     NEXYS_VIDEO_CFG = copy.deepcopy(EXTRA_ARGS)
+    KINTEX_CFG = copy.deepcopy(EXTRA_ARGS)
 
     for param in ARTY.items():
         ARTY_CFG.append("-D"+param[0].upper()+"="+str(param[1]))
+    ARTY_CFG.append("-DETH_TARGET_FPGA_ARTY")
     for param in NEXYS_VIDEO.items():
         NEXYS_VIDEO_CFG.append("-D"+param[0].upper()+"="+str(param[1]))
+    NEXYS_VIDEO_CFG.append("-DETH_TARGET_FPGA_NEXYSV")
+    for param in KINTEX.items():
+        KINTEX_CFG.append("-D"+param[0].upper()+"="+str(param[1]))
+    KINTEX_CFG.append("-DETH_TARGET_FPGA_KINTEX")
 
     def _get_cfg_args(flavor):
-        if flavor == "arty":
-            return cfg_const.ARTY_CFG
+        if flavor == "kintex":
+            return cfg_const.KINTEX_CFG
         elif flavor == "nexys":
             return cfg_const.NEXYS_VIDEO_CFG
         else:
-            return cfg_const.NEXYS_VIDEO_CFG
+            return cfg_const.ARTY_CFG

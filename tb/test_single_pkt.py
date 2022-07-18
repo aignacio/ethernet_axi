@@ -4,7 +4,7 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 11.07.2022
+# Last Modified Date: 18.07.2022
 # Last Modified By  : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 import cocotb
 import pytest
@@ -19,7 +19,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, with_timeout, Event, RisingEdge
 from cocotbext.axi import AxiBus, AxiLiteBus
 from cocotbext.axi import AxiMaster, AxiLiteMaster
-from cocotbext.eth import GmiiFrame, MiiPhy
+from cocotbext.eth import GmiiFrame, MiiPhy, RgmiiPhy
 from scapy.layers.l2 import Ether, ARP
 from scapy.layers.inet import IP, UDP
 from cocotb.result import TestFailure
@@ -40,8 +40,17 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     eth_csr_if     = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk, dut.rst)
     eth_infifo_if  = AxiMaster(AxiBus.from_prefix(dut, "eth_infifo_s"), dut.clk, dut.rst)
     eth_outfifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_outfifo_s"), dut.clk, dut.rst)
-    mii_phy_if     = MiiPhy(dut.phy_txd, None, dut.phy_tx_en, dut.phy_tx_clk,
+
+    if eth_flavor == 'nexys':
+        phy_if = RgmiiPhy(dut.phy_txd, dut.phy_tx_ctl, dut.phy_tx_clk,
+                            dut.phy_rxd, dut.phy_rx_ctl, dut.phy_rx_clk, speed=1000e6)
+        dut.phy_int_n.setimmediatevalue(1)
+        dut.phy_pme_n.setimmediatevalue(1)
+    else:
+        phy_if = MiiPhy(dut.phy_txd, None, dut.phy_tx_en, dut.phy_tx_clk,
                             dut.phy_rxd, dut.phy_rx_er, dut.phy_rx_dv, dut.phy_rx_clk, speed=100e6)
+        dut.phy_crs.setimmediatevalue(0)
+        dut.phy_col.setimmediatevalue(0)
 
     if idle_inserter:
         eth_infifo_if.write_if.aw_channel.set_pause_generator(idle_inserter())
@@ -58,9 +67,6 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
 
         eth_outfifo_if.write_if.b_channel.set_pause_generator(backpressure_inserter())
         eth_outfifo_if.read_if.r_channel.set_pause_generator(backpressure_inserter())
-
-    dut.phy_crs.setimmediatevalue(0)
-    dut.phy_col.setimmediatevalue(0)
 
     #############################
     #    ETH CSR read access    #
@@ -82,7 +88,7 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     udp = UDP(sport=5678, dport=1234)
     test_pkt = eth / ip / udp / payload
     test_frame = GmiiFrame.from_payload(test_pkt.build(), tx_complete=Event())
-    await mii_phy_if.rx.send(test_frame)
+    await phy_if.rx.send(test_frame)
     await test_frame.tx_complete.wait()
     timeout_cnt = 0
     while int(dut.pkt_recv) == 0:
@@ -142,7 +148,7 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     await with_timeout(write.wait(), *cfg_const.TIMEOUT_AXI)
 
     log.info("Receive ARP request")
-    rx_frame = await mii_phy_if.tx.recv()
+    rx_frame = await phy_if.tx.recv()
     rx_pkt = Ether(bytes(rx_frame.get_payload()))
     log.info("RX packet: %s", repr(rx_pkt))
 
@@ -165,10 +171,10 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
         hwdst=test_pkt.dst, pdst=test_pkt[IP].dst)
     resp_pkt = eth / arp
     resp_frame = GmiiFrame.from_payload(resp_pkt.build())
-    await mii_phy_if.rx.send(resp_frame)
+    await phy_if.rx.send(resp_frame)
 
     log.info("Receive UDP packet")
-    rx_frame = await mii_phy_if.tx.recv()
+    rx_frame = await phy_if.tx.recv()
     rx_pkt = Ether(bytes(rx_frame.get_payload()))
     log.info("RX packet: %s", repr(rx_pkt))
     assert rx_pkt[UDP].payload == test_pkt[UDP].payload

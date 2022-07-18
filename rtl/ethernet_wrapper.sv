@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 11.07.2022
+ * Last Modified Date: 18.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -19,6 +19,7 @@ module ethernet_wrapper
   // Slave outFIFO I/F
   input   s_axi_mosi_t  eth_outfifo_mosi_i,
   output  s_axi_miso_t  eth_outfifo_miso_o,
+`ifdef ETH_TARGET_FPGA_ARTY
   // Ethernet: 100BASE-T MII
   output  logic         phy_ref_clk, // 25MHz
   input                 phy_rx_clk,
@@ -31,6 +32,18 @@ module ethernet_wrapper
   input                 phy_col,
   input                 phy_crs,
   output  logic         phy_reset_n,
+`elsif ETH_TARGET_FPGA_NEXYSV
+  // Ethernet: 1000BASE-T RGMII
+  input                 phy_rx_clk,
+  input   [3:0]         phy_rxd,
+  input                 phy_rx_ctl,
+  output                phy_tx_clk,
+  output  [3:0]         phy_txd,
+  output                phy_tx_ctl,
+  output                phy_reset_n,
+  input                 phy_int_n,
+  input                 phy_pme_n,
+`endif
   // IRQs
   output  logic         pkt_recv_o,
   output  logic         pkt_sent_o
@@ -74,11 +87,37 @@ module ethernet_wrapper
   logic        tx_eth_payload_axis_tuser;
 
   logic        udp_hdr_valid;
-
+  logic        clk_out;
+  logic        clk90;
   assign phy_reset_n = !rst;
-  // TODO: Added mmcm clock of 25MHz
-  assign phy_ref_clk = clk;
 
+`ifdef VERILATOR
+  `ifdef ETH_TARGET_FPGA_ARTY
+    assign phy_ref_clk = clk;
+  `elsif ETH_TARGET_FPGA_NEXYSV
+    assign clk90 = clk;
+  `endif
+`else
+  `ifdef ETH_TARGET_FPGA_ARTY
+    assign phy_ref_clk = clk_out;
+  `elsif ETH_TARGET_FPGA_NEXYSV
+    assign clk90 = clk_out;
+  `elsif ETH_TARGET_FPGA_KINTEX
+    assign clk90 = clk_out;
+  `endif
+
+  clk_mgmt u_clk_mgmt (
+  `ifdef ETH_TARGET_FPGA_KINTEX
+    .clk_in_p   ('0),
+    .clk_in_n   ('0),
+  `else
+    .clk_in     (clk),
+  `endif
+    .rst_in     (~rst),
+    .clk_out    (clk_out),
+    .clk_locked ()
+  );
+`endif
   /* verilator lint_off WIDTH */
   eth_csr #(
     .ID_WIDTH                               (`AXI_TXN_ID_WIDTH),
@@ -148,6 +187,7 @@ module ethernet_wrapper
   );
   /* verilator lint_on WIDTH */
 
+`ifdef ETH_TARGET_FPGA_ARTY
   eth_mac_mii_fifo #(
     .TARGET                                 ("XILINX"),
     .CLOCK_INPUT_STYLE                      ("BUFR"),
@@ -197,6 +237,61 @@ module ethernet_wrapper
     .ifg_delay                              (12),
     .tx_error_underflow                     ()
   );
+`elsif ETH_TARGET_FPGA_NEXYSV
+  eth_mac_1g_rgmii_fifo #(
+    .TARGET                                 ("XILINX"),
+    .IODDR_STYLE                            ("IODDR"),
+    .CLOCK_INPUT_STYLE                      ("BUFR"),
+    .USE_CLK90                              ("TRUE"),
+    .ENABLE_PADDING                         (1),
+    .MIN_FRAME_LENGTH                       (64),
+    .TX_FIFO_DEPTH                          (4096),
+    .TX_FRAME_FIFO                          (1),
+    .RX_FIFO_DEPTH                          (4096),
+    .RX_FRAME_FIFO                          (1)
+  ) eth_mac_inst (
+    .gtx_clk                                (clk),
+    .gtx_clk90                              (clk90),
+    .gtx_rst                                (rst),
+    .logic_clk                              (clk),
+    .logic_rst                              (rst),
+
+    .tx_axis_tdata                          (tx_axis_tdata),
+    .tx_axis_tvalid                         (tx_axis_tvalid),
+    .tx_axis_tready                         (tx_axis_tready),
+    .tx_axis_tlast                          (tx_axis_tlast),
+    .tx_axis_tuser                          (tx_axis_tuser),
+    .tx_axis_tkeep                          ('1),
+
+    .rx_axis_tdata                          (rx_axis_tdata),
+    .rx_axis_tvalid                         (rx_axis_tvalid),
+    .rx_axis_tready                         (rx_axis_tready),
+    .rx_axis_tlast                          (rx_axis_tlast),
+    .rx_axis_tuser                          (rx_axis_tuser),
+    .rx_axis_tkeep                          (),
+
+    .rgmii_rx_clk                           (phy_rx_clk),
+    .rgmii_rxd                              (phy_rxd),
+    .rgmii_rx_ctl                           (phy_rx_ctl),
+    .rgmii_tx_clk                           (phy_tx_clk),
+    .rgmii_txd                              (phy_txd),
+    .rgmii_tx_ctl                           (phy_tx_ctl),
+
+    .tx_fifo_overflow                       (),
+    .tx_fifo_bad_frame                      (),
+    .tx_fifo_good_frame                     (),
+    .rx_error_bad_frame                     (),
+    .rx_error_bad_fcs                       (),
+    .rx_fifo_overflow                       (),
+    .rx_fifo_bad_frame                      (),
+    .rx_fifo_good_frame                     (),
+    .speed                                  (),
+    .tx_error_underflow                     (),
+
+    .ifg_delay                              (12)
+  );
+//`elif ETH_TARGET_FPGA_KINTEX
+`endif
 
   eth_axis_rx u_eth_axis_rx (
     .clk                                    (clk),

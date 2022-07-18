@@ -42,6 +42,14 @@
     DONE_PKT_ST
   } fsm_pkt_t;
 
+  `ifndef ETH_TARGET_FPGA_ARTY
+  `ifndef ETH_TARGET_FPGA_NEXYSV
+  `ifndef ETH_TARGET_FPGA_KINTEX
+    `define    ETH_TARGET_FPGA_ARTY // ARTY, NEXYSV, KINTEX
+  `endif
+  `endif
+  `endif
+
   localparam INFIFO_KB_SIZE                  = 1;
   localparam OUTFIFO_KB_SIZE                 = 1;
   localparam ETH_OT_FIFO                     = 4;

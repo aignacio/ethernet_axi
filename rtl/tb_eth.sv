@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 05.06.2022
- * Last Modified Date: 10.07.2022
+ * Last Modified Date: 18.07.2022
  */
 module tb_eth
   import utils_pkg::*;
@@ -131,8 +131,9 @@ module tb_eth
   output  axi_user_data_t eth_outfifo_s_ruser,
   output                  eth_outfifo_s_rvalid,
 
+`ifdef ETH_TARGET_FPGA_ARTY
   // Ethernet: 100BASE-T MII
-  output                  phy_ref_clk,
+  output  logic           phy_ref_clk, // 25MHz
   input                   phy_rx_clk,
   input   [3:0]           phy_rxd,
   input                   phy_rx_dv,
@@ -142,7 +143,19 @@ module tb_eth
   output                  phy_tx_en,
   input                   phy_col,
   input                   phy_crs,
+  output  logic           phy_reset_n,
+`elsif ETH_TARGET_FPGA_NEXYSV
+  // Ethernet: 1000BASE-T RGMII
+  input                   phy_rx_clk,
+  input   [3:0]           phy_rxd,
+  input                   phy_rx_ctl,
+  output                  phy_tx_clk,
+  output  [3:0]           phy_txd,
+  output                  phy_tx_ctl,
   output                  phy_reset_n,
+  input                   phy_int_n,
+  input                   phy_pme_n,
+`endif
 
   // IRQ
   output                  pkt_recv,
@@ -288,6 +301,7 @@ module tb_eth
     .eth_infifo_miso_o (eth_infifo_miso),
     .eth_outfifo_mosi_i(eth_outfifo_mosi),
     .eth_outfifo_miso_o(eth_outfifo_miso),
+`ifdef ETH_TARGET_FPGA_ARTY
     // Ethernet: 100BASE-T MII
     .phy_ref_clk       (phy_ref_clk),
     .phy_rx_clk        (phy_rx_clk),
@@ -300,6 +314,18 @@ module tb_eth
     .phy_col           (phy_col),
     .phy_crs           (phy_crs),
     .phy_reset_n       (phy_reset_n),
+`elsif ETH_TARGET_FPGA_NEXYSV
+    // Ethernet: 1000BASE-T RGMII
+    .phy_rx_clk        (phy_rx_clk),
+    .phy_rxd           (phy_rxd),
+    .phy_rx_ctl        (phy_rx_ctl),
+    .phy_tx_clk        (phy_tx_clk),
+    .phy_txd           (phy_txd),
+    .phy_tx_ctl        (phy_tx_ctl),
+    .phy_reset_n       (phy_reset_n),
+    .phy_int_n         (phy_int_n),
+    .phy_pme_n         (phy_pme_n),
+`endif
     // IRQ
     .pkt_recv_o        (pkt_recv),
     .pkt_sent_o        (pkt_sent)
