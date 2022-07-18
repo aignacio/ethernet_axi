@@ -1,5 +1,5 @@
 /**
- * File              : clk_mgmt.sv
+ * File              : clk_mgmt_eth.sv
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 17.03.2022
@@ -8,7 +8,7 @@
 
 `default_nettype wire
 
-module clk_mgmt(
+module clk_mgmt_eth(
 `ifdef ETH_TARGET_FPGA_KINTEX
   input   clk_in_p,
   input   clk_in_n,

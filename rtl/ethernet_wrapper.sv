@@ -106,7 +106,7 @@ module ethernet_wrapper
     assign clk90 = clk_out;
   `endif
 
-  clk_mgmt u_clk_mgmt (
+  clk_mgmt_eth u_clk_mgmt_eth(
   `ifdef ETH_TARGET_FPGA_KINTEX
     .clk_in_p   ('0),
     .clk_in_n   ('0),
