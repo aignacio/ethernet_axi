@@ -30,16 +30,16 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     log = logging.getLogger(f"cocotb.eth")
     await cocotb.start(Clock(dut.clk_axi, *cfg_const.CLK_100MHz).start())
     await cocotb.start(Clock(dut.clk, *cfg_const.CLK_200MHz).start())
-    dut.rst_src.setimmediatevalue(1)
+    dut.rst.setimmediatevalue(1)
     await ClockCycles(dut.clk_axi, 3)
-    dut.rst_src.setimmediatevalue(0)
-    dut.rst_src.setimmediatevalue(1)
+    dut.rst.setimmediatevalue(0)
+    dut.rst.setimmediatevalue(1)
     await ClockCycles(dut.clk_axi, 3)
-    dut.rst_src.setimmediatevalue(0)
+    dut.rst.setimmediatevalue(0)
 
-    eth_csr_if     = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk_axi, dut.rst_src)
-    eth_infifo_if  = AxiMaster(AxiBus.from_prefix(dut, "eth_infifo_s"), dut.clk_axi, dut.rst_src)
-    eth_outfifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_outfifo_s"), dut.clk_axi, dut.rst_src)
+    eth_csr_if     = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk_axi, dut.rst)
+    eth_infifo_if  = AxiMaster(AxiBus.from_prefix(dut, "eth_infifo_s"), dut.clk_axi, dut.rst)
+    eth_outfifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_outfifo_s"), dut.clk_axi, dut.rst)
 
     if eth_flavor == 'nexys':
         phy_if = RgmiiPhy(dut.phy_txd, dut.phy_tx_ctl, dut.phy_tx_clk,
