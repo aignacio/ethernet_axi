@@ -28,18 +28,18 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     eth_flavor = os.getenv("FLAVOR")
 
     log = logging.getLogger(f"cocotb.eth")
-    await cocotb.start(Clock(dut.clk, *cfg_const.CLK_100MHz).start())
-    dut.rst.setimmediatevalue(1)
-    await ClockCycles(dut.clk, 3)
-    dut.rst.setimmediatevalue(0)
-    await cocotb.start(Clock(dut.clk, *cfg_const.CLK_100MHz).start())
-    dut.rst.setimmediatevalue(1)
-    await ClockCycles(dut.clk, 3)
-    dut.rst.setimmediatevalue(0)
+    await cocotb.start(Clock(dut.clk_axi, *cfg_const.CLK_100MHz).start())
+    await cocotb.start(Clock(dut.clk, *cfg_const.CLK_200MHz).start())
+    dut.rst_src.setimmediatevalue(1)
+    await ClockCycles(dut.clk_axi, 3)
+    dut.rst_src.setimmediatevalue(0)
+    dut.rst_src.setimmediatevalue(1)
+    await ClockCycles(dut.clk_axi, 3)
+    dut.rst_src.setimmediatevalue(0)
 
-    eth_csr_if     = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk, dut.rst)
-    eth_infifo_if  = AxiMaster(AxiBus.from_prefix(dut, "eth_infifo_s"), dut.clk, dut.rst)
-    eth_outfifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_outfifo_s"), dut.clk, dut.rst)
+    eth_csr_if     = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "eth_csr"), dut.clk_axi, dut.rst_src)
+    eth_infifo_if  = AxiMaster(AxiBus.from_prefix(dut, "eth_infifo_s"), dut.clk_axi, dut.rst_src)
+    eth_outfifo_if = AxiMaster(AxiBus.from_prefix(dut, "eth_outfifo_s"), dut.clk_axi, dut.rst_src)
 
     if eth_flavor == 'nexys':
         phy_if = RgmiiPhy(dut.phy_txd, dut.phy_tx_ctl, dut.phy_tx_clk,
@@ -95,7 +95,7 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
     await test_frame.tx_complete.wait()
     timeout_cnt = 0
     while int(dut.pkt_recv) == 0:
-       await RisingEdge(dut.clk)
+       await RisingEdge(dut.clk_axi)
        if timeout_cnt == (cfg_const.TIMEOUT_VAL*4):
            log.error("Timeout on waiting for an IRQ")
            raise TestFailure("Timeout on waiting for an IRQ")

@@ -22,7 +22,7 @@ csr_out/eth_csr.v:
 	$(RUN_CMD) rggen --plugin rggen-verilog -c config_csr.yml -o csr_out eth_csr.xlsx
 
 wave:
-	$(GTKWAVE_PRE)/gtkwave run_dir/run_verilator_test_full_fifo_arty/dump.fst tmpl.gtkw
+	$(GTKWAVE_PRE)/gtkwave run_dir/run_verilator_test_single_pkt_nexys/dump.fst tmpl.gtkw
 
 coverage.info:
 	$(RUN_CMD) verilator_coverage $(COV_REP) --write-info coverage.info

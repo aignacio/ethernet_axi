@@ -105,7 +105,7 @@ module clk_mgmt_eth(
   );
 
   IBUFG clk_ibufg_inst(
-    .I(clk),
+    .I(clk_in),
     .O(clk_ibufg)
   );
 
