@@ -67,15 +67,17 @@ module eth_csr
   output logic o_clear_irq,
   output logic o_clear_irq_write_trigger,
   output logic o_clear_arp,
-  output logic o_clear_arp_write_trigger
+  output logic o_clear_arp_write_trigger,
+  input logic i_irq_pkt_recv,
+  input logic i_irq_pkt_sent
 );
-  rggen_register_if #(8, 32, 32) register_if[30]();
+  rggen_register_if #(8, 32, 32) register_if[32]();
   rggen_axi4lite_adapter #(
     .ID_WIDTH             (ID_WIDTH),
     .ADDRESS_WIDTH        (ADDRESS_WIDTH),
     .LOCAL_ADDRESS_WIDTH  (8),
     .BUS_WIDTH            (32),
-    .REGISTERS            (30),
+    .REGISTERS            (32),
     .PRE_DECODE           (PRE_DECODE),
     .BASE_ADDRESS         (BASE_ADDRESS),
     .BYTE_SIZE            (256),
@@ -1409,6 +1411,94 @@ module eth_csr
         .i_value            ('0),
         .i_mask             ('1),
         .o_value            (o_clear_arp),
+        .o_value_unmasked   ()
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_irq_pkt_recv
+    rggen_bit_field_if #(32) bit_field_if();
+    `rggen_tie_off_unused_signals(32, 32'h00000001, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (0),
+      .ADDRESS_WIDTH  (8),
+      .OFFSET_ADDRESS (8'h78),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .REGISTER_INDEX (0)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[30]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_irq_pkt_recv
+      localparam bit INITIAL_VALUE = 1'h0;
+      rggen_bit_field_if #(1) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 1)
+      rggen_bit_field #(
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1),
+        .TRIGGER            (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('0),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            (i_irq_pkt_recv),
+        .i_mask             ('1),
+        .o_value            (),
+        .o_value_unmasked   ()
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_irq_pkt_sent
+    rggen_bit_field_if #(32) bit_field_if();
+    `rggen_tie_off_unused_signals(32, 32'h00000001, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (0),
+      .ADDRESS_WIDTH  (8),
+      .OFFSET_ADDRESS (8'h7c),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .REGISTER_INDEX (0)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[31]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_irq_pkt_sent
+      localparam bit INITIAL_VALUE = 1'h0;
+      rggen_bit_field_if #(1) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 1)
+      rggen_bit_field #(
+        .WIDTH              (1),
+        .STORAGE            (0),
+        .EXTERNAL_READ_DATA (1),
+        .TRIGGER            (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('0),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            (i_irq_pkt_sent),
+        .i_mask             ('1),
+        .o_value            (),
         .o_value_unmasked   ()
       );
     end

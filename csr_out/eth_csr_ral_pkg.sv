@@ -273,6 +273,24 @@ package eth_csr_ral_pkg;
       `rggen_ral_create_field(clear_arp, 0, 1, "WO", 0, 1'h0, 1, -1, "")
     endfunction
   endclass
+  class irq_pkt_recv_reg_model extends rggen_ral_reg;
+    rand rggen_ral_field irq_pkt_recv;
+    function new(string name);
+      super.new(name, 32, 0);
+    endfunction
+    function void build();
+      `rggen_ral_create_field(irq_pkt_recv, 0, 1, "RO", 1, 1'h0, 1, -1, "")
+    endfunction
+  endclass
+  class irq_pkt_sent_reg_model extends rggen_ral_reg;
+    rand rggen_ral_field irq_pkt_sent;
+    function new(string name);
+      super.new(name, 32, 0);
+    endfunction
+    function void build();
+      `rggen_ral_create_field(irq_pkt_sent, 0, 1, "RO", 1, 1'h0, 1, -1, "")
+    endfunction
+  endclass
   class eth_csr_block_model extends rggen_ral_block;
     rand eth_mac_low_reg_model eth_mac_low;
     rand eth_mac_high_reg_model eth_mac_high;
@@ -304,6 +322,8 @@ package eth_csr_ral_pkg;
     rand send_pkt_reg_model send_pkt;
     rand clear_irq_reg_model clear_irq;
     rand clear_arp_reg_model clear_arp;
+    rand irq_pkt_recv_reg_model irq_pkt_recv;
+    rand irq_pkt_sent_reg_model irq_pkt_sent;
     function new(string name);
       super.new(name, 4, 0);
     endfunction
@@ -338,6 +358,8 @@ package eth_csr_ral_pkg;
       `rggen_ral_create_reg(send_pkt, '{}, 8'h6c, "WO", "g_send_pkt.u_register")
       `rggen_ral_create_reg(clear_irq, '{}, 8'h70, "WO", "g_clear_irq.u_register")
       `rggen_ral_create_reg(clear_arp, '{}, 8'h74, "WO", "g_clear_arp.u_register")
+      `rggen_ral_create_reg(irq_pkt_recv, '{}, 8'h78, "RO", "g_irq_pkt_recv.u_register")
+      `rggen_ral_create_reg(irq_pkt_sent, '{}, 8'h7c, "RO", "g_irq_pkt_sent.u_register")
     endfunction
   endclass
 endpackage

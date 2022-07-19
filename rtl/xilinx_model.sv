@@ -129,3 +129,31 @@ module BUFGMUX #(
     end
   end
 endmodule
+
+module IDELAYE2 #(
+  parameter IDELAY_TYPE = "FIXED"
+)(
+  input        IDATAIN,
+  output logic DATAOUT,
+  input        DATAIN,
+  input        C,
+  input        CE,
+  input        INC,
+  input        CINVCTRL,
+  input        CNTVALUEIN,
+  input        CNTVALUEOUT,
+  input        LD,
+  input        LDPIPEEN,
+  input        REGRST
+);
+  always_comb begin
+    DATAOUT = IDATAIN;
+  end
+endmodule
+
+module IDELAYCTRL (
+  input  REFCLK,
+  input  RST,
+  output RDY
+);
+endmodule

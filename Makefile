@@ -5,7 +5,7 @@
 # Last Modified Date: 19.07.2022
 COV_REP			:=	$(shell find run_dir -name 'coverage.dat')
 GTKWAVE_PRE	:=	/Applications/gtkwave.app/Contents/Resources/bin/
-SPEC_TEST		?=	#-k test_single_pkt[kintex]
+SPEC_TEST		?=	-k test_single_pkt[nexys]
 RUN_CMD			:=	docker run --rm --name eth_run 		\
 								-v $(abspath .):/ethernet_axi -w	\
 								/ethernet_axi aignacio/axi_dma

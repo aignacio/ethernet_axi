@@ -3,15 +3,17 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 08.07.2022
- * Last Modified Date: 11.07.2022
+ * Last Modified Date: 19.07.2022
  */
 module pkt_fifo
   import utils_pkg::*;
 #(
   parameter int FIFO_TYPE   = "IN" // or "OUT"
 )(
-  input                 clk,
-  input                 rst,
+  input                 clk_axi,
+  input                 rst_axi,
+  input                 clk_eth,
+  input                 rst_eth,
   // Slave AXI I/F
   input   s_axi_mosi_t  axi_mosi,
   output  s_axi_miso_t  axi_miso,
@@ -249,26 +251,53 @@ module pkt_fifo
     end
   end : axi_slave_if
 
-  always_ff @ (posedge clk) begin
-    if (rst) begin
-      rd_ptr_ff   <= '0;
-      wr_ptr_ff   <= '0;
-      len_cnt_ff  <= '0;
-      st_ff       <= IDLE_PKT_ST;
-      lsb_ff      <= '0;
+  always_ff @ (posedge clk_axi) begin
+    if (rst_axi) begin
+      if (FIFO_TYPE == "IN") begin
+        rd_ptr_ff   <= '0;
+      end
+      else begin
+        wr_ptr_ff   <= '0;
+      end
       alen_rd_ff  <= '0;
       start_rd_ff <= '0;
       bid_ff      <= '0;
     end
     else begin
-      rd_ptr_ff   <= next_rd_ptr;
-      wr_ptr_ff   <= next_wr_ptr;
-      len_cnt_ff  <= next_len;
-      st_ff       <= next_st;
-      lsb_ff      <= next_lsb;
+      if (FIFO_TYPE == "IN") begin
+        rd_ptr_ff   <= next_rd_ptr;
+      end
+      else begin
+        wr_ptr_ff   <= next_wr_ptr;
+      end
       alen_rd_ff  <= next_alen;
       start_rd_ff <= next_rd_start;
       bid_ff      <= next_bid;
+    end
+  end
+
+  always_ff @ (posedge clk_eth) begin
+    if (rst_eth) begin
+      if (FIFO_TYPE == "IN") begin
+        wr_ptr_ff   <= '0;
+      end
+      else begin
+        rd_ptr_ff   <= '0;
+      end
+      len_cnt_ff  <= '0;
+      st_ff       <= IDLE_PKT_ST;
+      lsb_ff      <= '0;
+    end
+    else begin
+      if (FIFO_TYPE == "IN") begin
+        wr_ptr_ff   <= next_wr_ptr;
+      end
+      else begin
+        rd_ptr_ff   <= next_rd_ptr;
+      end
+      len_cnt_ff  <= next_len;
+      st_ff       <= next_st;
+      lsb_ff      <= next_lsb;
     end
   end
 
@@ -276,8 +305,8 @@ module pkt_fifo
     .SLOTS (ETH_OT_FIFO),
     .WIDTH ($bits({axi_mosi.arlen,axi_mosi.arid}))
   ) u_axi_ot_txn (
-    .clk     (clk),
-    .rst     (rst),
+    .clk     (clk_axi),
+    .rst     (rst_axi),
     .clear_i ('0),
     .write_i (wr_ot),
     .read_i  (rd_ot),
@@ -290,20 +319,46 @@ module pkt_fifo
     .free_o  ()
   );
 
-  bytewrite_tdp_ram_rf#(
-    .ADDR_WIDTH ($clog2(M_WIDTH))
-  ) u_ram (
-    .clk    (clk),
-    .enaA   (rd_mem_en),
-    .weA    ('b0),
-    .addrA  (rd_mem_addr),
-    .dinA   ('b0),
-    .doutA  (rd_mem_data),
-    .enaB   (wr_mem_en),
-    .weB    (wr_mem_strb),
-    .addrB  (wr_mem_addr),
-    .dinB   (wr_mem_data),
-    .doutB  ()
-  );
+  if (FIFO_TYPE == "IN") begin
+    // Write at 125MHz from UDP design
+    // Read at AXI Clk from AXI slave I/F
+    bytewrite_tdp_ram_rf#(
+      .ADDR_WIDTH ($clog2(M_WIDTH))
+    ) u_ram (
+      .clkA   (clk_axi),
+      .enaA   (rd_mem_en),
+      .weA    ('b0),
+      .addrA  (rd_mem_addr),
+      .dinA   ('b0),
+      .doutA  (rd_mem_data),
+      .clkB   (clk_eth),
+      .enaB   (wr_mem_en),
+      .weB    (wr_mem_strb),
+      .addrB  (wr_mem_addr),
+      .dinB   (wr_mem_data),
+      .doutB  ()
+    );
+  end
+  else begin
+    // Read at 125MHz from UDP design
+    // Write at AXI Clk from AXI slave I/F
+    bytewrite_tdp_ram_rf#(
+      .ADDR_WIDTH ($clog2(M_WIDTH))
+    ) u_ram (
+      .clkA   (clk_eth),
+      .enaA   (rd_mem_en),
+      .weA    ('b0),
+      .addrA  (rd_mem_addr),
+      .dinA   ('b0),
+      .doutA  (rd_mem_data),
+      .clkB   (clk_axi),
+      .enaB   (wr_mem_en),
+      .weB    (wr_mem_strb),
+      .addrB  (wr_mem_addr),
+      .dinB   (wr_mem_data),
+      .doutB  ()
+    );
+
+  end
 
 endmodule

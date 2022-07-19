@@ -181,6 +181,18 @@
 #define ETH_CSR_CLEAR_ARP_BYTE_WIDTH 4
 #define ETH_CSR_CLEAR_ARP_BYTE_SIZE 4
 #define ETH_CSR_CLEAR_ARP_BYTE_OFFSET 0x74
+#define ETH_CSR_IRQ_PKT_RECV_BIT_WIDTH 1
+#define ETH_CSR_IRQ_PKT_RECV_BIT_MASK 0x1
+#define ETH_CSR_IRQ_PKT_RECV_BIT_OFFSET 0
+#define ETH_CSR_IRQ_PKT_RECV_BYTE_WIDTH 4
+#define ETH_CSR_IRQ_PKT_RECV_BYTE_SIZE 4
+#define ETH_CSR_IRQ_PKT_RECV_BYTE_OFFSET 0x78
+#define ETH_CSR_IRQ_PKT_SENT_BIT_WIDTH 1
+#define ETH_CSR_IRQ_PKT_SENT_BIT_MASK 0x1
+#define ETH_CSR_IRQ_PKT_SENT_BIT_OFFSET 0
+#define ETH_CSR_IRQ_PKT_SENT_BYTE_WIDTH 4
+#define ETH_CSR_IRQ_PKT_SENT_BYTE_SIZE 4
+#define ETH_CSR_IRQ_PKT_SENT_BYTE_OFFSET 0x7c
 typedef struct {
   uint32_t eth_mac_low;
   uint32_t eth_mac_high;
@@ -212,8 +224,8 @@ typedef struct {
   uint32_t send_pkt;
   uint32_t clear_irq;
   uint32_t clear_arp;
-  uint32_t __reserved_0x78;
-  uint32_t __reserved_0x7c;
+  uint32_t irq_pkt_recv;
+  uint32_t irq_pkt_sent;
   uint32_t __reserved_0x80;
   uint32_t __reserved_0x84;
   uint32_t __reserved_0x88;

@@ -11,7 +11,8 @@ import copy
 import math
 
 class cfg_const:
-    regression_setup = ['arty', 'nexys', 'kintex']
+    # regression_setup = ['arty', 'nexys', 'kintex']
+    regression_setup = ['nexys']
 
     ARTY = {}
     ARTY['AXI_ADDR_WIDTH'] = 32

@@ -35,6 +35,8 @@
 |[send_pkt](#eth_csr-send_pkt)|0x6c|
 |[clear_irq](#eth_csr-clear_irq)|0x70|
 |[clear_arp](#eth_csr-clear_arp)|0x74|
+|[irq_pkt_recv](#eth_csr-irq_pkt_recv)|0x78|
+|[irq_pkt_sent](#eth_csr-irq_pkt_sent)|0x7c|
 
 ### <div id="eth_csr-eth_mac_low"></div>eth_mac_low
 
@@ -365,3 +367,25 @@
 |name|bit_assignments|type|initial_value|reference|comment|
 |:--|:--|:--|:--|:--|:--|
 |clear_arp|[0]|wotrg|0x0||Clear ARP table|
+
+### <div id="eth_csr-irq_pkt_recv"></div>irq_pkt_recv
+
+* offset_address
+    * 0x78
+* type
+    * default
+
+|name|bit_assignments|type|initial_value|reference|comment|
+|:--|:--|:--|:--|:--|:--|
+|irq_pkt_recv|[0]|ro|0x0||Received pkt IRQ|
+
+### <div id="eth_csr-irq_pkt_sent"></div>irq_pkt_sent
+
+* offset_address
+    * 0x7c
+* type
+    * default
+
+|name|bit_assignments|type|initial_value|reference|comment|
+|:--|:--|:--|:--|:--|:--|
+|irq_pkt_sent|[0]|ro|0x0||Pkt sent IRQ|

@@ -4,3 +4,6 @@
 [submodule "verilog-ethernet"]
 	path = verilog-ethernet
 	url = git@github.com:alexforencich/verilog-ethernet.git
+[submodule "cdc_components"]
+	path = cdc_components
+	url = git@github.com:aignacio/cdc_components.git

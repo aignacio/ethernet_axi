@@ -9,6 +9,7 @@ module tb_eth
   import utils_pkg::*;
 (
   input                   clk,
+  input                   clk_axi,
   input                   rst,
 
   // Slave AXI4 lite - ETH CSR I/F
@@ -303,9 +304,18 @@ module tb_eth
     eth_outfifo_s_rvalid  = eth_outfifo_miso.rvalid;
   end
 
+
   ethernet_wrapper u_eth(
-    .clk               (clk),
-    .rst               (rst),
+`ifdef ETH_TARGET_FPGA_ARTY
+    .clk_src           (clk), // 100MHz
+`elsif ETH_TARGET_FPGA_NEXYSV
+    .clk_src           (clk), // 100MHz
+`elsif ETH_TARGET_FPGA_KINTEX
+    .clk_in_p          (clk),    // 50MHz
+    .clk_in_n          (clk),    // 50MHz
+`endif
+    .clk_axi           (clk_axi),
+    .rst_src           (rst),
     // CSR AXIL I/F
     .eth_csr_mosi_i    (eth_csr_mosi),
     .eth_csr_miso_o    (eth_csr_miso),

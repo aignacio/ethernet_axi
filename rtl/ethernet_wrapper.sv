@@ -8,8 +8,16 @@
 module ethernet_wrapper
   import utils_pkg::*;
 (
-  input                 clk,
-  input                 rst, // Active-High
+`ifdef ETH_TARGET_FPGA_ARTY
+  input                 clk_src,  // 100MHz
+`elsif ETH_TARGET_FPGA_NEXYSV
+  input                 clk_src,  // 100MHz
+`elsif ETH_TARGET_FPGA_KINTEX
+  input                 clk_in_p, // 50MHz
+  input                 clk_in_n, // 50MHz
+`endif
+  input                 clk_axi,  // Clk of the AXI bus
+  input                 rst_src,  // Active-High
   // CSR I/F
   input   s_axil_mosi_t eth_csr_mosi_i,
   output  s_axil_miso_t eth_csr_miso_o,
@@ -100,43 +108,55 @@ module ethernet_wrapper
   logic        tx_eth_payload_axis_tuser;
 
   logic        udp_hdr_valid;
-  logic        clk_out;
-  logic        clk90;
-  assign phy_reset_n = !rst;
+  logic        clk_200MHz;
+  logic        clk_125MHz; // Internal clock
+  logic        clk_90MHz;
+  logic        clk_25MHz;
+  logic        clk_locked;
+  logic        rst_int;
+
+  assign phy_reset_n = !rst_int;
 
 `ifdef VERILATOR
-  `ifdef ETH_TARGET_FPGA_ARTY
-    assign phy_ref_clk = clk;
-  `elsif ETH_TARGET_FPGA_NEXYSV
-    assign clk90 = clk;
-  `endif
+  assign clk_200MHz = clk_src;
+  assign clk_125MHz = clk_src;
+  assign clk_90MHz  = clk_src;
+  assign clk_25MHz  = clk_src;
+  assign rst_int    = rst_src;
 `else
-  `ifdef ETH_TARGET_FPGA_ARTY
-    assign phy_ref_clk = clk_out;
-  `elsif ETH_TARGET_FPGA_NEXYSV
-    assign clk90 = clk_out;
-  `elsif ETH_TARGET_FPGA_KINTEX
-    assign clk90 = clk_out;
-  `endif
+  sync_reset #(
+    .N            (4)
+  ) sync_reset_inst (
+    .clk          (clk_125MHz),
+    .rst          (~clk_locked),
+    .out          (rst_int)
+  );
 
   clk_mgmt_eth u_clk_mgmt_eth(
   `ifdef ETH_TARGET_FPGA_KINTEX
-    .clk_in_p   ('0),
-    .clk_in_n   ('0),
+    .clk_in_p     (clk_in_p),
+    .clk_in_n     (clk_in_n),
   `else
-    .clk_in     (clk),
+    .clk_in       (clk_src),  // 100MHz
   `endif
-    .rst_in     (~rst),
-    .clk_out    (clk_out),
-    .clk_locked ()
+    .rst_in       (rst_src),
+    .clk_125MHz   (clk_125MHz),
+  `ifdef ETH_TARGET_FPGA_NEXYSV
+    .clk_90MHz    (clk_90MHz),
+    .clk_200MHz   (clk_200MHz),
+  `endif
+  `ifdef ETH_TARGET_FPGA_ARTY
+    .clk_25MHz    (phy_ref_clk),
+  `endif
+    .clk_locked   (clk_locked)
   );
 `endif
   /* verilator lint_off WIDTH */
   eth_csr #(
     .ID_WIDTH                               (`AXI_TXN_ID_WIDTH)
   ) u_eth_csr (
-    .i_clk                                  (clk),
-    .i_rst_n                                (~rst),
+    .i_clk                                  (clk_axi),
+    .i_rst_n                                (~rst_src),
     .i_awvalid                              (eth_csr_mosi_i.awvalid),
     .o_awready                              (eth_csr_miso_o.awready),
     .i_awid                                 (eth_csr_mosi_i.awid),
@@ -196,7 +216,10 @@ module ethernet_wrapper
     .i_send_fifo_rd_ptr                     (outfifo_status.rd_ptr),
     .i_send_fifo_wr_ptr                     (outfifo_status.wr_ptr),
     .i_send_fifo_full                       (outfifo_status.full),
-    .i_send_fifo_empty                      (outfifo_status.empty)
+    .i_send_fifo_empty                      (outfifo_status.empty),
+
+    .i_irq_pkt_recv                         (irq_rx_ff),
+    .i_irq_pkt_sent                         (irq_tx_ff)
   );
   /* verilator lint_on WIDTH */
 
@@ -211,9 +234,9 @@ module ethernet_wrapper
     .RX_FIFO_DEPTH                          (4096),
     .RX_FRAME_FIFO                          (1)
   ) eth_mac_inst (
-    .rst                                    (rst),
-    .logic_clk                              (clk),
-    .logic_rst                              (rst),
+    .rst                                    (rst_int),
+    .logic_clk                              (clk_125MHz),
+    .logic_rst                              (rst_int),
 
     .tx_axis_tdata                          (tx_axis_tdata),
     .tx_axis_tvalid                         (tx_axis_tvalid),
@@ -251,6 +274,101 @@ module ethernet_wrapper
     .tx_error_underflow                     ()
   );
 `elsif ETH_TARGET_FPGA_NEXYSV
+  // IODELAY elements for RGMII interface to PHY
+  logic [3:0] phy_rxd_delay;
+  logic       phy_rx_ctl_delay;
+
+  IDELAYCTRL idelayctrl_inst(
+    .REFCLK       (clk_200MHz),
+    .RST          (rst_int),
+    .RDY          ()
+  );
+
+  IDELAYE2 #(
+    .IDELAY_TYPE  ("FIXED")
+  ) phy_rxd_idelay_0 (
+    .IDATAIN      (phy_rxd[0]),
+    .DATAOUT      (phy_rxd_delay[0]),
+    .DATAIN       ('0),
+    .C            ('0),
+    .CE           ('0),
+    .INC          ('0),
+    .CINVCTRL     ('0),
+    .CNTVALUEIN   ('0),
+    .CNTVALUEOUT  (),
+    .LD           ('0),
+    .LDPIPEEN     ('0),
+    .REGRST       ('0)
+  );
+
+  IDELAYE2 #(
+    .IDELAY_TYPE  ("FIXED")
+  ) phy_rxd_idelay_1 (
+    .IDATAIN      (phy_rxd[1]),
+    .DATAOUT      (phy_rxd_delay[1]),
+    .DATAIN       ('0),
+    .C            ('0),
+    .CE           ('0),
+    .INC          ('0),
+    .CINVCTRL     ('0),
+    .CNTVALUEIN   ('0),
+    .CNTVALUEOUT  (),
+    .LD           ('0),
+    .LDPIPEEN     ('0),
+    .REGRST       ('0)
+  );
+
+  IDELAYE2 #(
+    .IDELAY_TYPE  ("FIXED")
+  ) phy_rxd_idelay_2 (
+    .IDATAIN      (phy_rxd[2]),
+    .DATAOUT      (phy_rxd_delay[2]),
+    .DATAIN       ('0),
+    .C            ('0),
+    .CE           ('0),
+    .INC          ('0),
+    .CINVCTRL     ('0),
+    .CNTVALUEIN   ('0),
+    .CNTVALUEOUT  (),
+    .LD           ('0),
+    .LDPIPEEN     ('0),
+    .REGRST       ('0)
+  );
+
+  IDELAYE2 #(
+    .IDELAY_TYPE  ("FIXED")
+  ) phy_rxd_idelay_3 (
+    .IDATAIN      (phy_rxd[3]),
+    .DATAOUT      (phy_rxd_delay[3]),
+    .DATAIN       ('0),
+    .C            ('0),
+    .CE           ('0),
+    .INC          ('0),
+    .CINVCTRL     ('0),
+    .CNTVALUEIN   ('0),
+    .CNTVALUEOUT  (),
+    .LD           ('0),
+    .LDPIPEEN     ('0),
+    .REGRST       ('0)
+  );
+
+  IDELAYE2 #(
+    .IDELAY_TYPE  ("FIXED")
+  ) phy_rx_ctl_idelay (
+    .IDATAIN      (phy_rx_ctl),
+    .DATAOUT      (phy_rx_ctl_delay),
+    .DATAIN       ('0),
+    .C            ('0),
+    .CE           ('0),
+    .INC          ('0),
+    .CINVCTRL     ('0),
+    .CNTVALUEIN   ('0),
+    .CNTVALUEOUT  (),
+    .LD           ('0),
+    .LDPIPEEN     ('0),
+    .REGRST       ('0)
+  );
+
   eth_mac_1g_rgmii_fifo #(
     .TARGET                                 ("XILINX"),
     .IODDR_STYLE                            ("IODDR"),
@@ -263,11 +381,11 @@ module ethernet_wrapper
     .RX_FIFO_DEPTH                          (4096),
     .RX_FRAME_FIFO                          (1)
   ) eth_mac_inst (
-    .gtx_clk                                (clk),
-    .gtx_clk90                              (clk90),
-    .gtx_rst                                (rst),
-    .logic_clk                              (clk),
-    .logic_rst                              (rst),
+    .gtx_clk                                (clk_125MHz),
+    .gtx_clk90                              (clk_90MHz),
+    .gtx_rst                                (rst_int),
+    .logic_clk                              (clk_125MHz),
+    .logic_rst                              (rst_int),
 
     .tx_axis_tdata                          (tx_axis_tdata),
     .tx_axis_tvalid                         (tx_axis_tvalid),
@@ -284,8 +402,8 @@ module ethernet_wrapper
     .rx_axis_tkeep                          (),
 
     .rgmii_rx_clk                           (phy_rx_clk),
-    .rgmii_rxd                              (phy_rxd),
-    .rgmii_rx_ctl                           (phy_rx_ctl),
+    .rgmii_rxd                              (phy_rxd_delay),
+    .rgmii_rx_ctl                           (phy_rx_ctl_delay),
     .rgmii_tx_clk                           (phy_tx_clk),
     .rgmii_txd                              (phy_txd),
     .rgmii_tx_ctl                           (phy_tx_ctl),
@@ -315,10 +433,10 @@ module ethernet_wrapper
     .RX_FIFO_DEPTH                          (4096),
     .RX_FRAME_FIFO                          (1)
   ) eth_mac_inst (
-    .gtx_clk                                (clk),
-    .gtx_rst                                (rst),
-    .logic_clk                              (clk),
-    .logic_rst                              (rst),
+    .gtx_clk                                (clk_125MHz),
+    .gtx_rst                                (rst_int),
+    .logic_clk                              (clk_125MHz),
+    .logic_rst                              (rst_int),
 
     .tx_axis_tdata                          (tx_axis_tdata),
     .tx_axis_tvalid                         (tx_axis_tvalid),
@@ -360,8 +478,8 @@ module ethernet_wrapper
 `endif
 
   eth_axis_rx u_eth_axis_rx (
-    .clk                                    (clk),
-    .rst                                    (rst),
+    .clk                                    (clk_125MHz),
+    .rst                                    (rst_int),
     // AXI input
     .s_axis_tdata                           (rx_axis_tdata),
     .s_axis_tvalid                          (rx_axis_tvalid),
@@ -387,8 +505,8 @@ module ethernet_wrapper
   );
 
   eth_axis_tx u_eth_axis_tx (
-    .clk                                    (clk),
-    .rst                                    (rst),
+    .clk                                    (clk_125MHz),
+    .rst                                    (rst_int),
     // Ethernet frame input
     .s_eth_hdr_valid                        (tx_eth_hdr_valid),
     .s_eth_hdr_ready                        (tx_eth_hdr_ready),
@@ -421,8 +539,8 @@ module ethernet_wrapper
     .UDP_CHECKSUM_PAYLOAD_FIFO_DEPTH        (UDP_CHECKSUM_PAYLOAD_FIFO_DEPTH),
     .UDP_CHECKSUM_HEADER_FIFO_DEPTH         (UDP_CHECKSUM_HEADER_FIFO_DEPTH )
   ) u_udp_complete (
-    .clk                                    (clk),
-    .rst                                    (rst),
+    .clk                                    (clk_125MHz),
+    .rst                                    (rst_int),
     // Ethernet frame input
     .s_eth_hdr_valid                        (rx_eth_hdr_valid),
     .s_eth_hdr_ready                        (rx_eth_hdr_ready),
@@ -560,8 +678,10 @@ module ethernet_wrapper
   pkt_fifo #(
     .FIFO_TYPE("IN")
   ) u_infifo (
-    .clk           (clk),
-    .rst           (rst),
+    .clk_axi       (clk_axi),
+    .rst_axi       (rst_src),
+    .clk_eth       (clk_125MHz),
+    .rst_eth       (rst_int),
     // Slave AXI I/F
     .axi_mosi      (eth_infifo_mosi_i),
     .axi_miso      (eth_infifo_miso_o),
@@ -579,8 +699,10 @@ module ethernet_wrapper
   pkt_fifo #(
     .FIFO_TYPE("OUT")
   ) u_outfifo (
-    .clk           (clk),
-    .rst           (rst),
+    .clk_axi       (clk_axi),
+    .rst_axi       (rst_src),
+    .clk_eth       (clk_125MHz),
+    .rst_eth       (rst_int),
     // Slave AXI I/F
     .axi_mosi      (eth_outfifo_mosi_i),
     .axi_miso      (eth_outfifo_miso_o),
@@ -653,8 +775,8 @@ module ethernet_wrapper
     end
   end
 
-  always_ff @ (posedge clk) begin
-    if (rst) begin
+  always_ff @ (posedge clk_125MHz) begin
+    if (rst_int) begin
       recv_udp_ff <= s_eth_udp_t'('0);
       irq_rx_ff   <= 1'b0;
       irq_tx_ff   <= 1'b0;
