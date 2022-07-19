@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 18.07.2022
+ * Last Modified Date: 19.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -43,6 +43,19 @@ module ethernet_wrapper
   output                phy_reset_n,
   input                 phy_int_n,
   input                 phy_pme_n,
+`elsif ETH_TARGET_FPGA_KINTEX
+  // Ethernet: 1000BASE-T GMII
+  input                 phy_rx_clk,
+  input   [7:0]         phy_rxd,
+  input                 phy_rx_dv,
+  input                 phy_rx_er,
+  output                phy_gtx_clk,
+  input                 phy_tx_clk,
+  output  [7:0]         phy_txd,
+  output                phy_tx_en,
+  output                phy_tx_er,
+  output                phy_reset_n,
+  input                 phy_int_n,
 `endif
   // IRQs
   output  logic         pkt_recv_o,
@@ -120,7 +133,7 @@ module ethernet_wrapper
 `endif
   /* verilator lint_off WIDTH */
   eth_csr #(
-    .ID_WIDTH                               (`AXI_TXN_ID_WIDTH),
+    .ID_WIDTH                               (`AXI_TXN_ID_WIDTH)
   ) u_eth_csr (
     .i_clk                                  (clk),
     .i_rst_n                                (~rst),
@@ -290,7 +303,60 @@ module ethernet_wrapper
 
     .ifg_delay                              (12)
   );
-//`elif ETH_TARGET_FPGA_KINTEX
+`elsif ETH_TARGET_FPGA_KINTEX
+  eth_mac_1g_gmii_fifo #(
+    .TARGET                                 ("XILINX"),
+    .IODDR_STYLE                            ("IODDR"),
+    .CLOCK_INPUT_STYLE                      ("BUFR"),
+    .ENABLE_PADDING                         (1),
+    .MIN_FRAME_LENGTH                       (64),
+    .TX_FIFO_DEPTH                          (4096),
+    .TX_FRAME_FIFO                          (1),
+    .RX_FIFO_DEPTH                          (4096),
+    .RX_FRAME_FIFO                          (1)
+  ) eth_mac_inst (
+    .gtx_clk                                (clk),
+    .gtx_rst                                (rst),
+    .logic_clk                              (clk),
+    .logic_rst                              (rst),
+
+    .tx_axis_tdata                          (tx_axis_tdata),
+    .tx_axis_tvalid                         (tx_axis_tvalid),
+    .tx_axis_tready                         (tx_axis_tready),
+    .tx_axis_tlast                          (tx_axis_tlast),
+    .tx_axis_tuser                          (tx_axis_tuser),
+    .tx_axis_tkeep                          ('1),
+
+    .rx_axis_tdata                          (rx_axis_tdata),
+    .rx_axis_tvalid                         (rx_axis_tvalid),
+    .rx_axis_tready                         (rx_axis_tready),
+    .rx_axis_tlast                          (rx_axis_tlast),
+    .rx_axis_tuser                          (rx_axis_tuser),
+    .rx_axis_tkeep                          (),
+
+    .gmii_rx_clk                            (phy_rx_clk),
+    .gmii_rxd                               (phy_rxd),
+    .gmii_rx_dv                             (phy_rx_dv),
+    .gmii_rx_er                             (phy_rx_er),
+    .gmii_tx_clk                            (phy_gtx_clk),
+    .mii_tx_clk                             (phy_tx_clk),
+    .gmii_txd                               (phy_txd),
+    .gmii_tx_en                             (phy_tx_en),
+    .gmii_tx_er                             (phy_tx_er),
+
+    .tx_fifo_overflow                       (),
+    .tx_fifo_bad_frame                      (),
+    .tx_fifo_good_frame                     (),
+    .rx_error_bad_frame                     (),
+    .rx_error_bad_fcs                       (),
+    .rx_fifo_overflow                       (),
+    .rx_fifo_bad_frame                      (),
+    .rx_fifo_good_frame                     (),
+    .speed                                  (),
+    .tx_error_underflow                     (),
+
+    .ifg_delay                              (12)
+  );
 `endif
 
   eth_axis_rx u_eth_axis_rx (

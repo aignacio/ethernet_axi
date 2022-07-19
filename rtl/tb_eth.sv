@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 05.06.2022
- * Last Modified Date: 18.07.2022
+ * Last Modified Date: 19.07.2022
  */
 module tb_eth
   import utils_pkg::*;
@@ -155,6 +155,19 @@ module tb_eth
   output                  phy_reset_n,
   input                   phy_int_n,
   input                   phy_pme_n,
+`elsif ETH_TARGET_FPGA_KINTEX
+  // Ethernet: 1000BASE-T GMII
+  input                   phy_rx_clk,
+  input   [7:0]           phy_rxd,
+  input                   phy_rx_dv,
+  input                   phy_rx_er,
+  output                  phy_gtx_clk,
+  input                   phy_tx_clk,
+  output  [7:0]           phy_txd,
+  output                  phy_tx_en,
+  output                  phy_tx_er,
+  output                  phy_reset_n,
+  input                   phy_int_n,
 `endif
 
   // IRQ
@@ -325,6 +338,19 @@ module tb_eth
     .phy_reset_n       (phy_reset_n),
     .phy_int_n         (phy_int_n),
     .phy_pme_n         (phy_pme_n),
+`elsif ETH_TARGET_FPGA_KINTEX
+    // Ethernet: 1000BASE-T GMII
+    .phy_rx_clk        (phy_rx_clk),
+    .phy_rxd           (phy_rxd),
+    .phy_rx_dv         (phy_rx_dv),
+    .phy_rx_er         (phy_rx_er),
+    .phy_gtx_clk       (phy_gtx_clk),
+    .phy_tx_clk        (phy_tx_clk),
+    .phy_txd           (phy_txd),
+    .phy_tx_en         (phy_tx_en),
+    .phy_tx_er         (phy_tx_er),
+    .phy_reset_n       (phy_reset_n),
+    .phy_int_n         (phy_int_n),
 `endif
     // IRQ
     .pkt_recv_o        (pkt_recv),

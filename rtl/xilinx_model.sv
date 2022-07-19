@@ -108,3 +108,24 @@ module ODDR#(
   assign Q = q_reg;
 
 endmodule
+
+module BUFGMUX #(
+  parameter CLK_SEL_TYPE = "SYNC"  // ASYNC, SYNC
+)(
+  output logic O, // 1-bit output: Clock output
+  input        I0,      // 1-bit input: Clock input (S=0)
+  input        I1,      // 1-bit input: Clock input (S=1)
+  input        S        // 1-bit input: Clock select
+);
+  always_comb begin
+    if (I0) begin
+      O = I0;
+    end
+    else if (I1) begin
+      O = I1;
+    end
+    else begin
+      O = 1'dx;
+    end
+  end
+endmodule

@@ -4,14 +4,14 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 18.07.2022
+# Last Modified Date: 19.07.2022
 import os
 import glob
 import copy
 import math
 
 class cfg_const:
-    regression_setup = ['arty', 'nexys']
+    regression_setup = ['arty', 'nexys', 'kintex']
 
     ARTY = {}
     ARTY['AXI_ADDR_WIDTH'] = 32
@@ -90,6 +90,10 @@ class cfg_const:
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/ssio_ddr_in.v')
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/iddr.v')
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/oddr.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/eth_mac_1g_gmii_fifo.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/eth_mac_1g_gmii.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/gmii_phy_if.v')
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{ETH_V_DIR}/rtl/ssio_sdr_out.v')
     PATH_RUN        = str(os.getenv("PATH_RUN"))
     COMPILE_ARGS    = ["-f",os.path.join(PATH_RUN,"verilator.flags"),"--coverage","--coverage-line","--coverage-toggle"]
     if SIMULATOR == "verilator":

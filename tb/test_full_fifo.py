@@ -4,7 +4,7 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 18.07.2022
+# Last Modified Date: 19.07.2022
 # Last Modified By  : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 import cocotb
 import pytest
@@ -19,7 +19,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, with_timeout, Event, RisingEdge
 from cocotbext.axi import AxiBus, AxiLiteBus
 from cocotbext.axi import AxiMaster, AxiLiteMaster
-from cocotbext.eth import GmiiFrame, MiiPhy, RgmiiPhy
+from cocotbext.eth import GmiiFrame, MiiPhy, RgmiiPhy, GmiiPhy
 from scapy.layers.l2 import Ether, ARP
 from scapy.layers.inet import IP, UDP
 from cocotb.result import TestFailure
@@ -46,11 +46,14 @@ async def run_test(dut, config_clk="100MHz", idle_inserter=None, backpressure_in
                             dut.phy_rxd, dut.phy_rx_ctl, dut.phy_rx_clk, speed=1000e6)
         dut.phy_int_n.setimmediatevalue(1)
         dut.phy_pme_n.setimmediatevalue(1)
-    else:
+    elif eth_flavor == 'arty':
         phy_if = MiiPhy(dut.phy_txd, None, dut.phy_tx_en, dut.phy_tx_clk,
                             dut.phy_rxd, dut.phy_rx_er, dut.phy_rx_dv, dut.phy_rx_clk, speed=100e6)
         dut.phy_crs.setimmediatevalue(0)
         dut.phy_col.setimmediatevalue(0)
+    elif eth_flavor == 'kintex':
+        phy_if = GmiiPhy(dut.phy_txd, dut.phy_tx_er, dut.phy_tx_en, dut.phy_tx_clk, dut.phy_gtx_clk,
+                            dut.phy_rxd, dut.phy_rx_er, dut.phy_rx_dv, dut.phy_rx_clk, speed=1000e6)
 
     if idle_inserter:
         eth_infifo_if.write_if.aw_channel.set_pause_generator(idle_inserter())
