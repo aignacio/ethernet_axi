@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 08.07.2022
- * Last Modified Date: 19.07.2022
+ * Last Modified Date: 20.07.2022
  */
 module pkt_fifo
   import utils_pkg::*;
@@ -29,8 +29,6 @@ module pkt_fifo
 );
   localparam  M_WIDTH = (FIFO_TYPE == "IN") ? (INFIFO_KB_SIZE*256) :
                                               (OUTFIFO_KB_SIZE*256);
-
-  //logic [M_WIDTH-1:0][31:0] mem_ff;
 
   typedef logic [$bits({axi_mosi.arlen,axi_mosi.arid})-1:0] fifo_t;
 
@@ -68,6 +66,22 @@ module pkt_fifo
   fifo_t      data_out_ot;
   axi_alen_t  alen_rd_ff, next_alen;
   axi_alen_t  cur_alen;
+
+  function automatic ptr_t conv_strb(axi_wr_strb_t strb);
+    case (strb)
+      'b0001:  return 1;
+      'b0010:  return 1;
+      'b0100:  return 1;
+      'b1000:  return 1;
+      'b0011:  return 2;
+      'b0110:  return 2;
+      'b1100:  return 2;
+      'b0111:  return 3;
+      'b1110:  return 3;
+      'b1111:  return 4;
+      default: return 4;
+    endcase
+  endfunction
 
   always_comb begin
     fifo_st_o.rd_ptr = rd_ptr_ff;
@@ -111,7 +125,7 @@ module pkt_fifo
       rd_mem_addr = rd_ptr_ff[$clog2(OUTFIFO_KB_SIZE*1024)-1:2];
       rd_mem_en   = axis_read;
 
-      next_wr_ptr = wr_ptr_ff + (axi_write  ? 'd4 : 'd0);
+      next_wr_ptr = wr_ptr_ff + (axi_write ? conv_strb(axi_mosi.wstrb) : 'd0);
       wr_mem_addr = wr_ptr_ff[$clog2(OUTFIFO_KB_SIZE*1024)-1:2];
       wr_mem_en   = axi_write;
       wr_mem_data = axi_mosi.wdata;
@@ -196,7 +210,7 @@ module pkt_fifo
     next_bid      = bid_ff;
 
     if (FIFO_TYPE == "IN") begin
-      axi_miso.arready = ~full_ot;
+      axi_miso.arready = 1'b1;
 
       if (axi_mosi.arvalid && axi_miso.arready) begin
         data_in_ot = {axi_mosi.arlen,axi_mosi.arid};
@@ -207,6 +221,14 @@ module pkt_fifo
         {next_alen, axi_miso.rid} = data_out_ot;
         next_rd_start = 1'b1;
         axi_read      = 1'b1;
+      end
+
+      // Empty FIFO
+      if (~empty_ot && fifo_st_o.empty && ~start_rd_ff) begin
+        // Return error
+        axi_miso.rresp  = AXI_SLVERR;
+        axi_miso.rvalid = 1'b1;
+        axi_miso.rlast  = 1'b1;
       end
 
       if (start_rd_ff) begin
