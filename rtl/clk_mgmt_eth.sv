@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 17.03.2022
- * Last Modified Date: 19.07.2022
+ * Last Modified Date: 20.07.2022
  */
 
 `default_nettype wire
@@ -30,9 +30,9 @@ module clk_mgmt_eth(
 `ifdef ETH_TARGET_FPGA_NEXYSV
   logic clk_ibufg;
   logic mmcm_clkfb;
-  logic clk_mmcm_out;
-  logic clk90_mmcm_out;
-  logic clk_200_mmcm_out;
+  logic clk_mmcm_out_125MHz;
+  logic clk_mmcm_out_90MHz;
+  logic clk_mmcm_out_200MHz;
 
   // MMCM instance
   // 100 MHz in, 125 MHz out
@@ -78,11 +78,11 @@ module clk_mgmt_eth(
     .CLKFBIN           (mmcm_clkfb),
     .RST               (rst_in),
     .PWRDWN            (1'b0),
-    .CLKOUT0           (clk_mmcm_out),
+    .CLKOUT0           (clk_mmcm_out_125MHz),
     .CLKOUT0B          (),
-    .CLKOUT1           (clk90_mmcm_out),
+    .CLKOUT1           (clk_mmcm_out_90MHz),
     .CLKOUT1B          (),
-    .CLKOUT2           (clk_200_mmcm_out),
+    .CLKOUT2           (clk_mmcm_out_200MHz),
     .CLKOUT2B          (),
     .CLKOUT3           (),
     .CLKOUT3B          (),
@@ -95,12 +95,12 @@ module clk_mgmt_eth(
   );
 
   BUFG clk_bufg_inst(
-    .I(clk_mmcm_out),
+    .I(clk_mmcm_out_125MHz),
     .O(clk_125MHz)
   );
 
   BUFG clk90_bufg_inst(
-    .I(clk90_mmcm_out),
+    .I(clk_mmcm_out_90MHz),
     .O(clk_90MHz)
   );
 
@@ -110,7 +110,7 @@ module clk_mgmt_eth(
   );
 
   BUFG clk_200_bufg_inst(
-    .I(clk_200_mmcm_out),
+    .I(clk_mmcm_out_200MHz),
     .O(clk_200MHz)
   );
 `endif

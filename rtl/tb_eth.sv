@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 05.06.2022
- * Last Modified Date: 19.07.2022
+ * Last Modified Date: 20.07.2022
  */
 module tb_eth
   import utils_pkg::*;
@@ -307,15 +307,15 @@ module tb_eth
 
   ethernet_wrapper u_eth(
 `ifdef ETH_TARGET_FPGA_ARTY
-    .clk_src           (clk), // 100MHz
+    .clk_src           (clk),   // 100MHz
 `elsif ETH_TARGET_FPGA_NEXYSV
-    .clk_src           (clk), // 100MHz
+    .clk_src           (clk),   // 100MHz
 `elsif ETH_TARGET_FPGA_KINTEX
-    .clk_in_p          (clk),    // 50MHz
-    .clk_in_n          (clk),    // 50MHz
+    .clk_in_p          (clk),   // 50MHz
+    .clk_in_n          (clk),   // 50MHz
 `endif
     .clk_axi           (clk_axi),
-    .rst_src           (rst),
+    .rst_axi           (rst),
     // CSR AXIL I/F
     .eth_csr_mosi_i    (eth_csr_mosi),
     .eth_csr_miso_o    (eth_csr_miso),

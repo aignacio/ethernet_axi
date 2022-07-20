@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 19.07.2022
+ * Last Modified Date: 20.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -17,7 +17,7 @@ module ethernet_wrapper
   input                 clk_in_n, // 50MHz
 `endif
   input                 clk_axi,  // Clk of the AXI bus
-  input                 rst_src,  // Active-High
+  input                 rst_axi,  // Active-High
   // CSR I/F
   input   s_axil_mosi_t eth_csr_mosi_i,
   output  s_axil_miso_t eth_csr_miso_o,
@@ -122,7 +122,7 @@ module ethernet_wrapper
   assign clk_125MHz = clk_src;
   assign clk_90MHz  = clk_src;
   assign clk_25MHz  = clk_src;
-  assign rst_int    = rst_src;
+  assign rst_int    = rst_axi;
 `else
   sync_reset #(
     .N            (4)
@@ -139,7 +139,7 @@ module ethernet_wrapper
   `else
     .clk_in       (clk_src),  // 100MHz
   `endif
-    .rst_in       (rst_src),
+    .rst_in       (rst_axi),
     .clk_125MHz   (clk_125MHz),
   `ifdef ETH_TARGET_FPGA_NEXYSV
     .clk_90MHz    (clk_90MHz),
@@ -156,7 +156,7 @@ module ethernet_wrapper
     .ID_WIDTH                               (`AXI_TXN_ID_WIDTH)
   ) u_eth_csr (
     .i_clk                                  (clk_axi),
-    .i_rst_n                                (~rst_src),
+    .i_rst_n                                (~rst_axi),
     .i_awvalid                              (eth_csr_mosi_i.awvalid),
     .o_awready                              (eth_csr_miso_o.awready),
     .i_awid                                 (eth_csr_mosi_i.awid),
@@ -679,7 +679,7 @@ module ethernet_wrapper
     .FIFO_TYPE("IN")
   ) u_infifo (
     .clk_axi       (clk_axi),
-    .rst_axi       (rst_src),
+    .rst_axi       (rst_axi),
     .clk_eth       (clk_125MHz),
     .rst_eth       (rst_int),
     // Slave AXI I/F
@@ -700,7 +700,7 @@ module ethernet_wrapper
     .FIFO_TYPE("OUT")
   ) u_outfifo (
     .clk_axi       (clk_axi),
-    .rst_axi       (rst_src),
+    .rst_axi       (rst_axi),
     .clk_eth       (clk_125MHz),
     .rst_eth       (rst_int),
     // Slave AXI I/F
