@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 20.07.2022
+ * Last Modified Date: 23.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -13,8 +13,8 @@ module ethernet_wrapper
 `elsif ETH_TARGET_FPGA_NEXYSV
   input                 clk_src,  // 100MHz
 `elsif ETH_TARGET_FPGA_KINTEX
-  input                 clk_in_p, // 50MHz
-  input                 clk_in_n, // 50MHz
+  input                 clk_in_p, // 200MHz
+  input                 clk_in_n, // 200MHz
 `endif
   input                 clk_axi,  // Clk of the AXI bus
   input                 rst_axi,  // Active-High
