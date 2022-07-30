@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Mon Jul 11 17:57:36 2022
+[*] Sat Jul 30 10:50:53 2022
 [*]
-[dumpfile] "/Users/aignacio/projects/ethernet_axi/run_dir/run_verilator_test_full_fifo_arty/dump.fst"
-[dumpfile_mtime] "Mon Jul 11 17:53:56 2022"
-[dumpfile_size] 110644
+[dumpfile] "/Users/aignacio/projects/ethernet_axi/run_dir/run_verilator_test_single_pkt_nexys/dump.fst"
+[dumpfile_mtime] "Wed Jul 20 17:40:55 2022"
+[dumpfile_size] 287960
 [savefile] "/Users/aignacio/projects/ethernet_axi/tmpl.gtkw"
 [timestart] 0
-[size] 1680 998
-[pos] 0 264
-*-23.923664 34370000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[size] 3225 1726
+[pos] 241 366
+*-22.482452 4180000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] .
 [treeopen] .tb_eth.
 [treeopen] .tb_eth.u_eth.
@@ -18,7 +18,7 @@
 [sst_width] 307
 [signals_width] 383
 [sst_expanded] 1
-[sst_vpaned_height] 389
+[sst_vpaned_height] 713
 @28
 tb_eth.clk
 tb_eth.rst
@@ -65,26 +65,20 @@ tb_eth.eth_csr_miso.rvalid
 tb_eth.eth_csr_miso.wready
 @1401200
 -eth_csr
-@800200
+@c00200
 -phy_mii
 @28
-tb_eth.phy_col
-tb_eth.phy_crs
-tb_eth.phy_ref_clk
 tb_eth.phy_reset_n
 tb_eth.phy_rx_clk
-tb_eth.phy_rx_dv
-tb_eth.phy_rx_er
 @22
 tb_eth.phy_rxd[3:0]
 @28
 tb_eth.phy_tx_clk
-tb_eth.phy_tx_en
 @22
 tb_eth.phy_txd[3:0]
 @28
 tb_eth.pkt_recv
-@1000200
+@1401200
 -phy_mii
 @c00200
 -m_udp
@@ -156,19 +150,13 @@ tb_eth.u_eth.u_udp_complete.s_udp_source_port[15:0]
 tb_eth.u_eth.u_infifo.fifo_st_o.empty
 tb_eth.u_eth.u_infifo.axis_write
 @22
-tb_eth.u_eth.u_infifo.wr_ptr_ff[11:0]
 tb_eth.u_eth.u_infifo.wr_mem_data[31:0]
 @800200
 -infifo
-@22
-tb_eth.u_eth.u_infifo.fifo_st_o.rd_ptr[11:0]
-tb_eth.u_eth.u_infifo.fifo_st_o.wr_ptr[11:0]
 @28
 tb_eth.u_eth.u_infifo.fifo_st_o.done
 tb_eth.u_eth.u_infifo.fifo_st_o.empty
-@29
 tb_eth.u_eth.u_infifo.fifo_st_o.full
-@28
 tb_eth.u_eth.u_infifo.axi_mosi.arvalid
 @100000028
 tb_eth.u_eth.u_infifo.axi_mosi.arsize[2:0]
@@ -186,10 +174,6 @@ tb_eth.u_eth.u_infifo.axi_miso.rdata[31:0]
 -outfifo
 @28
 tb_eth.u_eth.u_outfifo.fifo_st_o.empty
-@24
-tb_eth.u_eth.u_outfifo.wr_ptr_ff[11:0]
-tb_eth.u_eth.u_outfifo.rd_ptr_ff[11:0]
-@28
 tb_eth.u_eth.u_outfifo.axi_mosi.awvalid
 tb_eth.u_eth.u_outfifo.axi_miso.awready
 @22
@@ -216,5 +200,24 @@ tb_eth.u_eth.u_outfifo.axis_sout_mosi.tvalid
 tb_eth.u_eth.u_outfifo.axis_sout_miso.tready
 @1401200
 -outfifo
+@800201
+-phy_rgmii
+@29
+tb_eth.u_eth.phy_int_n
+tb_eth.u_eth.phy_pme_n
+tb_eth.u_eth.phy_reset_n
+tb_eth.u_eth.phy_rx_clk
+tb_eth.u_eth.phy_rx_ctl
+tb_eth.u_eth.phy_rx_ctl_delay
+@23
+tb_eth.u_eth.phy_rxd[3:0]
+tb_eth.u_eth.phy_rxd_delay[3:0]
+@29
+tb_eth.u_eth.phy_tx_clk
+tb_eth.u_eth.phy_tx_ctl
+@23
+tb_eth.u_eth.phy_txd[3:0]
+@1000201
+-phy_rgmii
 [pattern_trace] 1
 [pattern_trace] 0

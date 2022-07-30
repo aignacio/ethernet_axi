@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 08.07.2022
- * Last Modified Date: 20.07.2022
+ * Last Modified Date: 30.07.2022
  */
 module pkt_fifo
   import utils_pkg::*;
@@ -161,6 +161,10 @@ module pkt_fifo
       if ((st_ff == IDLE_PKT_ST) && (next_st == STREAMING_PKT_ST)) begin
         axis_read = 1'b1;
         next_lsb  = rd_ptr_ff[1:0];
+      end
+
+      if ((st_ff == IDLE_PKT_ST) && (next_st == IDLE_PKT_ST)) begin
+        next_len = '0;
       end
 
       if (st_ff == STREAMING_PKT_ST) begin

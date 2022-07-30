@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 23.07.2022
+ * Last Modified Date: 30.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -384,8 +384,8 @@ module ethernet_wrapper
     .gtx_clk                                (clk_125MHz),
     .gtx_clk90                              (clk_90MHz),
     .gtx_rst                                (rst_int),
-    .logic_clk                              (clk_125MHz),
-    .logic_rst                              (rst_int),
+    .logic_clk                              (clk_axi),
+    .logic_rst                              (rst_axi),
 
     .tx_axis_tdata                          (tx_axis_tdata),
     .tx_axis_tvalid                         (tx_axis_tvalid),
@@ -435,8 +435,8 @@ module ethernet_wrapper
   ) eth_mac_inst (
     .gtx_clk                                (clk_125MHz),
     .gtx_rst                                (rst_int),
-    .logic_clk                              (clk_125MHz),
-    .logic_rst                              (rst_int),
+    .logic_clk                              (clk_axi),
+    .logic_rst                              (rst_axi),
 
     .tx_axis_tdata                          (tx_axis_tdata),
     .tx_axis_tvalid                         (tx_axis_tvalid),
@@ -478,8 +478,8 @@ module ethernet_wrapper
 `endif
 
   eth_axis_rx u_eth_axis_rx (
-    .clk                                    (clk_125MHz),
-    .rst                                    (rst_int),
+    .clk                                    (clk_axi),
+    .rst                                    (rst_axi),
     // AXI input
     .s_axis_tdata                           (rx_axis_tdata),
     .s_axis_tvalid                          (rx_axis_tvalid),
@@ -505,8 +505,8 @@ module ethernet_wrapper
   );
 
   eth_axis_tx u_eth_axis_tx (
-    .clk                                    (clk_125MHz),
-    .rst                                    (rst_int),
+    .clk                                    (clk_axi),
+    .rst                                    (rst_axi),
     // Ethernet frame input
     .s_eth_hdr_valid                        (tx_eth_hdr_valid),
     .s_eth_hdr_ready                        (tx_eth_hdr_ready),
@@ -539,8 +539,8 @@ module ethernet_wrapper
     .UDP_CHECKSUM_PAYLOAD_FIFO_DEPTH        (UDP_CHECKSUM_PAYLOAD_FIFO_DEPTH),
     .UDP_CHECKSUM_HEADER_FIFO_DEPTH         (UDP_CHECKSUM_HEADER_FIFO_DEPTH )
   ) u_udp_complete (
-    .clk                                    (clk_125MHz),
-    .rst                                    (rst_int),
+    .clk                                    (clk_axi),
+    .rst                                    (rst_axi),
     // Ethernet frame input
     .s_eth_hdr_valid                        (rx_eth_hdr_valid),
     .s_eth_hdr_ready                        (rx_eth_hdr_ready),
@@ -680,8 +680,8 @@ module ethernet_wrapper
   ) u_infifo (
     .clk_axi       (clk_axi),
     .rst_axi       (rst_axi),
-    .clk_eth       (clk_125MHz),
-    .rst_eth       (rst_int),
+    .clk_eth       (clk_axi),
+    .rst_eth       (rst_axi),
     // Slave AXI I/F
     .axi_mosi      (eth_infifo_mosi_i),
     .axi_miso      (eth_infifo_miso_o),
@@ -701,8 +701,8 @@ module ethernet_wrapper
   ) u_outfifo (
     .clk_axi       (clk_axi),
     .rst_axi       (rst_axi),
-    .clk_eth       (clk_125MHz),
-    .rst_eth       (rst_int),
+    .clk_eth       (clk_axi),
+    .rst_eth       (rst_axi),
     // Slave AXI I/F
     .axi_mosi      (eth_outfifo_mosi_i),
     .axi_miso      (eth_outfifo_miso_o),
@@ -775,8 +775,8 @@ module ethernet_wrapper
     end
   end
 
-  always_ff @ (posedge clk_125MHz) begin
-    if (rst_int) begin
+  always_ff @ (posedge clk_axi) begin
+    if (rst_axi) begin
       recv_udp_ff <= s_eth_udp_t'('0);
       irq_rx_ff   <= 1'b0;
       irq_tx_ff   <= 1'b0;
