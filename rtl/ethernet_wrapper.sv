@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 30.07.2022
+ * Last Modified Date: 31.07.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -189,7 +189,7 @@ module ethernet_wrapper
     .i_recv_mac_low                         (recv_udp_ff.mac[23:0]),
     .i_recv_mac_high                        (recv_udp_ff.mac[47:24]),
     .i_recv_ip                              (recv_udp_ff.ip),
-    .i_recv_udp_length                      (recv_udp_ff.length),
+    .i_recv_udp_length                      (recv_udp_ff.length-'d8),
     .i_recv_udp_src_port                    (recv_udp_ff.src_port),
     .i_recv_udp_dst_port                    (recv_udp_ff.dst_port),
     .o_recv_fifo_clear                      (),

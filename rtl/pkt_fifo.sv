@@ -8,7 +8,7 @@
 module pkt_fifo
   import utils_pkg::*;
 #(
-  parameter int FIFO_TYPE   = "IN" // or "OUT"
+  parameter int FIFO_TYPE = "IN" // or "OUT"
 )(
   input                 clk_axi,
   input                 rst_axi,
