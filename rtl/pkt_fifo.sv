@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 08.07.2022
- * Last Modified Date: 30.07.2022
+ * Last Modified Date: 31.07.2022
  */
 module pkt_fifo
   import utils_pkg::*;
@@ -183,9 +183,10 @@ module pkt_fifo
           next_lsb  = rd_ptr_ff[1:0];
         end
       end
+
+      fifo_st_o.done = (next_st == DONE_PKT_ST) && (st_ff == STREAMING_PKT_ST);
     end
 
-    fifo_st_o.done = (next_st == DONE_PKT_ST) && (st_ff == STREAMING_PKT_ST);
     txn_done = axis_sout_mosi.tvalid && axis_sout_miso.tready;
   end : axi_stream_ctrl
 
