@@ -637,7 +637,7 @@ module ethernet_wrapper
     .m_udp_ip_flags                         (),
     .m_udp_ip_fragment_offset               (),
     .m_udp_ip_ttl                           (),
-    .m_udp_ip_protocol                      (),
+    .m_udp_ip_protocol                      (ip_protocol),
     .m_udp_ip_header_checksum               (),
     .m_udp_ip_source_ip                     (recv_udp.ip),
     .m_udp_ip_dest_ip                       (),
@@ -740,6 +740,7 @@ module ethernet_wrapper
   logic [15:0]  recv_set_port;
   logic         recv_set_port_en;
   logic         valid_txn_ff, next_valid_txn;
+  logic         ip_protocol;
 
   always_comb begin
     next_rx_irq = irq_rx_ff;
@@ -789,7 +790,7 @@ module ethernet_wrapper
     axis_mosi_frame_output = s_axis_mosi_t'('0);
 
     if (recv_set_port_en) begin
-      if (recv_set_port == recv_udp.dst_port) begin
+      if ((recv_set_port == recv_udp.dst_port) && (ip_protocol == 'd17)) begin
         next_valid_txn = 'b1;
       end
 
