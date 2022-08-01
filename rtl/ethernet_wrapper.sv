@@ -743,6 +743,7 @@ module ethernet_wrapper
   logic         valid_txn_ff, next_valid_txn;
   logic [7:0]   ip_protocol;
   logic [31:0]  filter_ip;
+  logic [15:0]  recv_pkt;
 
   always_comb begin
     next_rx_irq = irq_rx_ff;
@@ -751,11 +752,6 @@ module ethernet_wrapper
     infifo_cmd.start = 1'b0;
     pkt_recv_full_o = infifo_status.full;
     next_valid_txn = valid_txn_ff;
-
-    // Receive pkt
-    if (udp_hdr_valid) begin
-      next_recv = recv_udp;
-    end
 
     if (infifo_status.done) begin
       next_rx_irq = 1'b1;
@@ -794,6 +790,10 @@ module ethernet_wrapper
     if (filter_en) begin
       if ((udp_hdr_valid == 'b1) && (filter_port == recv_udp.dst_port) && (ip_protocol == 8'd17) && (filter_ip == recv_udp.ip)) begin
         next_valid_txn = 'b1;
+        // Receive pkt
+        if (udp_hdr_valid) begin
+          next_recv = recv_udp;
+        end
       end
 
       if (valid_txn_ff) begin
@@ -803,6 +803,11 @@ module ethernet_wrapper
       end
     end
     else begin
+      // Receive pkt
+      if (udp_hdr_valid) begin
+        next_recv = recv_udp;
+      end
+
       axis_mosi_frame_output = axis_mosi_frame_recv;
       axis_miso_frame_recv = axis_miso_frame_output;
     end
