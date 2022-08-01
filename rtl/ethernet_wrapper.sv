@@ -740,7 +740,7 @@ module ethernet_wrapper
   logic [15:0]  recv_set_port;
   logic         recv_set_port_en;
   logic         valid_txn_ff, next_valid_txn;
-  logic         ip_protocol;
+  logic [7:0]   ip_protocol;
 
   always_comb begin
     next_rx_irq = irq_rx_ff;
@@ -790,7 +790,7 @@ module ethernet_wrapper
     axis_mosi_frame_output = s_axis_mosi_t'('0);
 
     if (recv_set_port_en) begin
-      if ((udp_hdr_valid == 'b1) && (recv_set_port == recv_udp.dst_port) && (ip_protocol == 'd17)) begin
+      if ((udp_hdr_valid == 'b1) && (recv_set_port == recv_udp.dst_port) && (ip_protocol == 8'd17)) begin
         next_valid_txn = 'b1;
       end
 
