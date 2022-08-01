@@ -71,16 +71,17 @@ module eth_csr
   input logic i_irq_pkt_recv,
   input logic i_irq_pkt_sent,
   input logic i_irq_pkt_recv_full,
-  output logic o_recv_set_port_en,
-  output logic [15:0] o_recv_set_port
+  output logic o_filter_en,
+  output logic [15:0] o_filter_port,
+  output logic [31:0] o_filter_ip
 );
-  rggen_register_if #(8, 32, 32) register_if[35]();
+  rggen_register_if #(8, 32, 32) register_if[36]();
   rggen_axi4lite_adapter #(
     .ID_WIDTH             (ID_WIDTH),
     .ADDRESS_WIDTH        (ADDRESS_WIDTH),
     .LOCAL_ADDRESS_WIDTH  (8),
     .BUS_WIDTH            (32),
-    .REGISTERS            (35),
+    .REGISTERS            (36),
     .PRE_DECODE           (PRE_DECODE),
     .BASE_ADDRESS         (BASE_ADDRESS),
     .BYTE_SIZE            (256),
@@ -1550,7 +1551,7 @@ module eth_csr
       );
     end
   end endgenerate
-  generate if (1) begin : g_recv_set_port_en
+  generate if (1) begin : g_filter_en
     rggen_bit_field_if #(32) bit_field_if();
     `rggen_tie_off_unused_signals(32, 32'h00000001, bit_field_if)
     rggen_default_register #(
@@ -1567,7 +1568,7 @@ module eth_csr
       .register_if  (register_if[33]),
       .bit_field_if (bit_field_if)
     );
-    if (1) begin : g_recv_set_port_en
+    if (1) begin : g_filter_en
       localparam bit INITIAL_VALUE = 1'h0;
       rggen_bit_field_if #(1) bit_field_sub_if();
       `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 1)
@@ -1589,12 +1590,12 @@ module eth_csr
         .i_hw_clear         ('0),
         .i_value            ('0),
         .i_mask             ('1),
-        .o_value            (o_recv_set_port_en),
+        .o_value            (o_filter_en),
         .o_value_unmasked   ()
       );
     end
   end endgenerate
-  generate if (1) begin : g_recv_set_port
+  generate if (1) begin : g_filter_port
     rggen_bit_field_if #(32) bit_field_if();
     `rggen_tie_off_unused_signals(32, 32'h0000ffff, bit_field_if)
     rggen_default_register #(
@@ -1611,7 +1612,7 @@ module eth_csr
       .register_if  (register_if[34]),
       .bit_field_if (bit_field_if)
     );
-    if (1) begin : g_recv_set_port
+    if (1) begin : g_filter_port
       localparam bit [15:0] INITIAL_VALUE = 16'h0000;
       rggen_bit_field_if #(16) bit_field_sub_if();
       `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 16)
@@ -1633,7 +1634,51 @@ module eth_csr
         .i_hw_clear         ('0),
         .i_value            ('0),
         .i_mask             ('1),
-        .o_value            (o_recv_set_port),
+        .o_value            (o_filter_port),
+        .o_value_unmasked   ()
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_filter_ip
+    rggen_bit_field_if #(32) bit_field_if();
+    `rggen_tie_off_unused_signals(32, 32'hffffffff, bit_field_if)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (8),
+      .OFFSET_ADDRESS (8'h8c),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .REGISTER_INDEX (0)
+    ) u_register (
+      .i_clk        (i_clk),
+      .i_rst_n      (i_rst_n),
+      .register_if  (register_if[35]),
+      .bit_field_if (bit_field_if)
+    );
+    if (1) begin : g_filter_ip
+      localparam bit [31:0] INITIAL_VALUE = 32'h00000000;
+      rggen_bit_field_if #(32) bit_field_sub_if();
+      `rggen_connect_bit_field_if(bit_field_if, bit_field_sub_if, 0, 32)
+      rggen_bit_field #(
+        .WIDTH          (32),
+        .INITIAL_VALUE  (INITIAL_VALUE),
+        .SW_WRITE_ONCE  (0),
+        .TRIGGER        (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .bit_field_if       (bit_field_sub_if),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_sw_write_enable  ('1),
+        .i_hw_write_enable  ('0),
+        .i_hw_write_data    ('0),
+        .i_hw_set           ('0),
+        .i_hw_clear         ('0),
+        .i_value            ('0),
+        .i_mask             ('1),
+        .o_value            (o_filter_ip),
         .o_value_unmasked   ()
       );
     end

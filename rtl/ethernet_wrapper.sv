@@ -218,8 +218,9 @@ module ethernet_wrapper
     .i_send_fifo_wr_ptr                     (outfifo_status.wr_ptr),
     .i_send_fifo_full                       (outfifo_status.full),
     .i_send_fifo_empty                      (outfifo_status.empty),
-    .o_recv_set_port_en                     (recv_set_port_en),
-    .o_recv_set_port                        (recv_set_port),
+    .o_filter_en                            (filter_en),
+    .o_filter_port                          (filter_port),
+    .o_filter_ip                            (filter_ip),
     .i_irq_pkt_recv_full                    (infifo_status.full),
     .i_irq_pkt_recv                         (irq_rx_ff),
     .i_irq_pkt_sent                         (irq_tx_ff)
@@ -737,10 +738,11 @@ module ethernet_wrapper
   s_fifo_st_t   outfifo_status;
   s_fifo_cmd_t  infifo_cmd;
   s_fifo_cmd_t  outfifo_cmd;
-  logic [15:0]  recv_set_port;
-  logic         recv_set_port_en;
+  logic [15:0]  filter_port;
+  logic         filter_en;
   logic         valid_txn_ff, next_valid_txn;
   logic [7:0]   ip_protocol;
+  logic [31:0]  filter_ip;
 
   always_comb begin
     next_rx_irq = irq_rx_ff;
@@ -789,8 +791,8 @@ module ethernet_wrapper
     axis_miso_frame_recv.tready = 'b1;
     axis_mosi_frame_output = s_axis_mosi_t'('0);
 
-    if (recv_set_port_en) begin
-      if ((udp_hdr_valid == 'b1) && (recv_set_port == recv_udp.dst_port) && (ip_protocol == 8'd17)) begin
+    if (filter_en) begin
+      if ((udp_hdr_valid == 'b1) && (filter_port == recv_udp.dst_port) && (ip_protocol == 8'd17) && (filter_ip == recv_udp.ip)) begin
         next_valid_txn = 'b1;
       end
 

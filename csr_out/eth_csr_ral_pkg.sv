@@ -300,22 +300,31 @@ package eth_csr_ral_pkg;
       `rggen_ral_create_field(irq_pkt_recv_full, 0, 1, "RO", 1, 1'h0, 1, -1, "")
     endfunction
   endclass
-  class recv_set_port_en_reg_model extends rggen_ral_reg;
-    rand rggen_ral_field recv_set_port_en;
+  class filter_en_reg_model extends rggen_ral_reg;
+    rand rggen_ral_field filter_en;
     function new(string name);
       super.new(name, 32, 0);
     endfunction
     function void build();
-      `rggen_ral_create_field(recv_set_port_en, 0, 1, "RW", 0, 1'h0, 1, -1, "")
+      `rggen_ral_create_field(filter_en, 0, 1, "RW", 0, 1'h0, 1, -1, "")
     endfunction
   endclass
-  class recv_set_port_reg_model extends rggen_ral_reg;
-    rand rggen_ral_field recv_set_port;
+  class filter_port_reg_model extends rggen_ral_reg;
+    rand rggen_ral_field filter_port;
     function new(string name);
       super.new(name, 32, 0);
     endfunction
     function void build();
-      `rggen_ral_create_field(recv_set_port, 0, 16, "RW", 0, 16'h0000, 1, -1, "")
+      `rggen_ral_create_field(filter_port, 0, 16, "RW", 0, 16'h0000, 1, -1, "")
+    endfunction
+  endclass
+  class filter_ip_reg_model extends rggen_ral_reg;
+    rand rggen_ral_field filter_ip;
+    function new(string name);
+      super.new(name, 32, 0);
+    endfunction
+    function void build();
+      `rggen_ral_create_field(filter_ip, 0, 32, "RW", 0, 32'h00000000, 1, -1, "")
     endfunction
   endclass
   class eth_csr_block_model extends rggen_ral_block;
@@ -352,8 +361,9 @@ package eth_csr_ral_pkg;
     rand irq_pkt_recv_reg_model irq_pkt_recv;
     rand irq_pkt_sent_reg_model irq_pkt_sent;
     rand irq_pkt_recv_full_reg_model irq_pkt_recv_full;
-    rand recv_set_port_en_reg_model recv_set_port_en;
-    rand recv_set_port_reg_model recv_set_port;
+    rand filter_en_reg_model filter_en;
+    rand filter_port_reg_model filter_port;
+    rand filter_ip_reg_model filter_ip;
     function new(string name);
       super.new(name, 4, 0);
     endfunction
@@ -391,8 +401,9 @@ package eth_csr_ral_pkg;
       `rggen_ral_create_reg(irq_pkt_recv, '{}, 8'h78, "RO", "g_irq_pkt_recv.u_register")
       `rggen_ral_create_reg(irq_pkt_sent, '{}, 8'h7c, "RO", "g_irq_pkt_sent.u_register")
       `rggen_ral_create_reg(irq_pkt_recv_full, '{}, 8'h80, "RO", "g_irq_pkt_recv_full.u_register")
-      `rggen_ral_create_reg(recv_set_port_en, '{}, 8'h84, "RW", "g_recv_set_port_en.u_register")
-      `rggen_ral_create_reg(recv_set_port, '{}, 8'h88, "RW", "g_recv_set_port.u_register")
+      `rggen_ral_create_reg(filter_en, '{}, 8'h84, "RW", "g_filter_en.u_register")
+      `rggen_ral_create_reg(filter_port, '{}, 8'h88, "RW", "g_filter_port.u_register")
+      `rggen_ral_create_reg(filter_ip, '{}, 8'h8c, "RW", "g_filter_ip.u_register")
     endfunction
   endclass
 endpackage

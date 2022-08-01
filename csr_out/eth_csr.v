@@ -71,25 +71,26 @@ module eth_csr #(
   input i_irq_pkt_recv,
   input i_irq_pkt_sent,
   input i_irq_pkt_recv_full,
-  output o_recv_set_port_en,
-  output [15:0] o_recv_set_port
+  output o_filter_en,
+  output [15:0] o_filter_port,
+  output [31:0] o_filter_ip
 );
   wire w_register_valid;
   wire [1:0] w_register_access;
   wire [7:0] w_register_address;
   wire [31:0] w_register_write_data;
   wire [3:0] w_register_strobe;
-  wire [34:0] w_register_active;
-  wire [34:0] w_register_ready;
-  wire [69:0] w_register_status;
-  wire [1119:0] w_register_read_data;
-  wire [1119:0] w_register_value;
+  wire [35:0] w_register_active;
+  wire [35:0] w_register_ready;
+  wire [71:0] w_register_status;
+  wire [1151:0] w_register_read_data;
+  wire [1151:0] w_register_value;
   rggen_axi4lite_adapter #(
     .ID_WIDTH             (ID_WIDTH),
     .ADDRESS_WIDTH        (ADDRESS_WIDTH),
     .LOCAL_ADDRESS_WIDTH  (8),
     .BUS_WIDTH            (32),
-    .REGISTERS            (35),
+    .REGISTERS            (36),
     .PRE_DECODE           (PRE_DECODE),
     .BASE_ADDRESS         (BASE_ADDRESS),
     .BYTE_SIZE            (256),
@@ -2282,7 +2283,7 @@ module eth_csr #(
       );
     end
   end endgenerate
-  generate if (1) begin : g_recv_set_port_en
+  generate if (1) begin : g_filter_en
     wire w_bit_field_valid;
     wire [31:0] w_bit_field_read_mask;
     wire [31:0] w_bit_field_write_mask;
@@ -2318,7 +2319,7 @@ module eth_csr #(
       .i_bit_field_read_data  (w_bit_field_read_data),
       .i_bit_field_value      (w_bit_field_value)
     );
-    if (1) begin : g_recv_set_port_en
+    if (1) begin : g_filter_en
       rggen_bit_field #(
         .WIDTH          (1),
         .INITIAL_VALUE  (`rggen_slice(1'h0, 1, 0)),
@@ -2342,12 +2343,12 @@ module eth_csr #(
         .i_hw_clear         ({1{1'b0}}),
         .i_value            ({1{1'b0}}),
         .i_mask             ({1{1'b1}}),
-        .o_value            (o_recv_set_port_en),
+        .o_value            (o_filter_en),
         .o_value_unmasked   ()
       );
     end
   end endgenerate
-  generate if (1) begin : g_recv_set_port
+  generate if (1) begin : g_filter_port
     wire w_bit_field_valid;
     wire [31:0] w_bit_field_read_mask;
     wire [31:0] w_bit_field_write_mask;
@@ -2383,7 +2384,7 @@ module eth_csr #(
       .i_bit_field_read_data  (w_bit_field_read_data),
       .i_bit_field_value      (w_bit_field_value)
     );
-    if (1) begin : g_recv_set_port
+    if (1) begin : g_filter_port
       rggen_bit_field #(
         .WIDTH          (16),
         .INITIAL_VALUE  (`rggen_slice(16'h0000, 16, 0)),
@@ -2407,7 +2408,72 @@ module eth_csr #(
         .i_hw_clear         ({16{1'b0}}),
         .i_value            ({16{1'b0}}),
         .i_mask             ({16{1'b1}}),
-        .o_value            (o_recv_set_port),
+        .o_value            (o_filter_port),
+        .o_value_unmasked   ()
+      );
+    end
+  end endgenerate
+  generate if (1) begin : g_filter_ip
+    wire w_bit_field_valid;
+    wire [31:0] w_bit_field_read_mask;
+    wire [31:0] w_bit_field_write_mask;
+    wire [31:0] w_bit_field_write_data;
+    wire [31:0] w_bit_field_read_data;
+    wire [31:0] w_bit_field_value;
+    `rggen_tie_off_unused_signals(32, 32'hffffffff, w_bit_field_read_data, w_bit_field_value)
+    rggen_default_register #(
+      .READABLE       (1),
+      .WRITABLE       (1),
+      .ADDRESS_WIDTH  (8),
+      .OFFSET_ADDRESS (8'h8c),
+      .BUS_WIDTH      (32),
+      .DATA_WIDTH     (32),
+      .REGISTER_INDEX (0)
+    ) u_register (
+      .i_clk                  (i_clk),
+      .i_rst_n                (i_rst_n),
+      .i_register_valid       (w_register_valid),
+      .i_register_access      (w_register_access),
+      .i_register_address     (w_register_address),
+      .i_register_write_data  (w_register_write_data),
+      .i_register_strobe      (w_register_strobe),
+      .o_register_active      (w_register_active[35+:1]),
+      .o_register_ready       (w_register_ready[35+:1]),
+      .o_register_status      (w_register_status[70+:2]),
+      .o_register_read_data   (w_register_read_data[1120+:32]),
+      .o_register_value       (w_register_value[1120+:32]),
+      .o_bit_field_valid      (w_bit_field_valid),
+      .o_bit_field_read_mask  (w_bit_field_read_mask),
+      .o_bit_field_write_mask (w_bit_field_write_mask),
+      .o_bit_field_write_data (w_bit_field_write_data),
+      .i_bit_field_read_data  (w_bit_field_read_data),
+      .i_bit_field_value      (w_bit_field_value)
+    );
+    if (1) begin : g_filter_ip
+      rggen_bit_field #(
+        .WIDTH          (32),
+        .INITIAL_VALUE  (`rggen_slice(32'h00000000, 32, 0)),
+        .SW_WRITE_ONCE  (0),
+        .TRIGGER        (0)
+      ) u_bit_field (
+        .i_clk              (i_clk),
+        .i_rst_n            (i_rst_n),
+        .i_sw_valid         (w_bit_field_valid),
+        .i_sw_read_mask     (w_bit_field_read_mask[0+:32]),
+        .i_sw_write_enable  (1'b1),
+        .i_sw_write_mask    (w_bit_field_write_mask[0+:32]),
+        .i_sw_write_data    (w_bit_field_write_data[0+:32]),
+        .o_sw_read_data     (w_bit_field_read_data[0+:32]),
+        .o_sw_value         (w_bit_field_value[0+:32]),
+        .o_write_trigger    (),
+        .o_read_trigger     (),
+        .i_hw_write_enable  (1'b0),
+        .i_hw_write_data    ({32{1'b0}}),
+        .i_hw_set           ({32{1'b0}}),
+        .i_hw_clear         ({32{1'b0}}),
+        .i_value            ({32{1'b0}}),
+        .i_mask             ({32{1'b1}}),
+        .o_value            (o_filter_ip),
         .o_value_unmasked   ()
       );
     end

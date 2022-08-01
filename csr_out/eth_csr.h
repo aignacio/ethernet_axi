@@ -199,18 +199,24 @@
 #define ETH_CSR_IRQ_PKT_RECV_FULL_BYTE_WIDTH 4
 #define ETH_CSR_IRQ_PKT_RECV_FULL_BYTE_SIZE 4
 #define ETH_CSR_IRQ_PKT_RECV_FULL_BYTE_OFFSET 0x80
-#define ETH_CSR_RECV_SET_PORT_EN_BIT_WIDTH 1
-#define ETH_CSR_RECV_SET_PORT_EN_BIT_MASK 0x1
-#define ETH_CSR_RECV_SET_PORT_EN_BIT_OFFSET 0
-#define ETH_CSR_RECV_SET_PORT_EN_BYTE_WIDTH 4
-#define ETH_CSR_RECV_SET_PORT_EN_BYTE_SIZE 4
-#define ETH_CSR_RECV_SET_PORT_EN_BYTE_OFFSET 0x84
-#define ETH_CSR_RECV_SET_PORT_BIT_WIDTH 16
-#define ETH_CSR_RECV_SET_PORT_BIT_MASK 0xffff
-#define ETH_CSR_RECV_SET_PORT_BIT_OFFSET 0
-#define ETH_CSR_RECV_SET_PORT_BYTE_WIDTH 4
-#define ETH_CSR_RECV_SET_PORT_BYTE_SIZE 4
-#define ETH_CSR_RECV_SET_PORT_BYTE_OFFSET 0x88
+#define ETH_CSR_FILTER_EN_BIT_WIDTH 1
+#define ETH_CSR_FILTER_EN_BIT_MASK 0x1
+#define ETH_CSR_FILTER_EN_BIT_OFFSET 0
+#define ETH_CSR_FILTER_EN_BYTE_WIDTH 4
+#define ETH_CSR_FILTER_EN_BYTE_SIZE 4
+#define ETH_CSR_FILTER_EN_BYTE_OFFSET 0x84
+#define ETH_CSR_FILTER_PORT_BIT_WIDTH 16
+#define ETH_CSR_FILTER_PORT_BIT_MASK 0xffff
+#define ETH_CSR_FILTER_PORT_BIT_OFFSET 0
+#define ETH_CSR_FILTER_PORT_BYTE_WIDTH 4
+#define ETH_CSR_FILTER_PORT_BYTE_SIZE 4
+#define ETH_CSR_FILTER_PORT_BYTE_OFFSET 0x88
+#define ETH_CSR_FILTER_IP_BIT_WIDTH 32
+#define ETH_CSR_FILTER_IP_BIT_MASK 0xffffffff
+#define ETH_CSR_FILTER_IP_BIT_OFFSET 0
+#define ETH_CSR_FILTER_IP_BYTE_WIDTH 4
+#define ETH_CSR_FILTER_IP_BYTE_SIZE 4
+#define ETH_CSR_FILTER_IP_BYTE_OFFSET 0x8c
 typedef struct {
   uint32_t eth_mac_low;
   uint32_t eth_mac_high;
@@ -245,9 +251,9 @@ typedef struct {
   uint32_t irq_pkt_recv;
   uint32_t irq_pkt_sent;
   uint32_t irq_pkt_recv_full;
-  uint32_t recv_set_port_en;
-  uint32_t recv_set_port;
-  uint32_t __reserved_0x8c;
+  uint32_t filter_en;
+  uint32_t filter_port;
+  uint32_t filter_ip;
   uint32_t __reserved_0x90;
   uint32_t __reserved_0x94;
   uint32_t __reserved_0x98;

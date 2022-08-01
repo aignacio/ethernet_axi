@@ -38,8 +38,9 @@
 |[irq_pkt_recv](#eth_csr-irq_pkt_recv)|0x78|
 |[irq_pkt_sent](#eth_csr-irq_pkt_sent)|0x7c|
 |[irq_pkt_recv_full](#eth_csr-irq_pkt_recv_full)|0x80|
-|[recv_set_port_en](#eth_csr-recv_set_port_en)|0x84|
-|[recv_set_port](#eth_csr-recv_set_port)|0x88|
+|[filter_en](#eth_csr-filter_en)|0x84|
+|[filter_port](#eth_csr-filter_port)|0x88|
+|[filter_ip](#eth_csr-filter_ip)|0x8c|
 
 ### <div id="eth_csr-eth_mac_low"></div>eth_mac_low
 
@@ -404,7 +405,7 @@
 |:--|:--|:--|:--|:--|:--|
 |irq_pkt_recv_full|[0]|ro|0x0||Recv FIFO full IRQ|
 
-### <div id="eth_csr-recv_set_port_en"></div>recv_set_port_en
+### <div id="eth_csr-filter_en"></div>filter_en
 
 * offset_address
     * 0x84
@@ -413,9 +414,9 @@
 
 |name|bit_assignments|type|initial_value|reference|comment|
 |:--|:--|:--|:--|:--|:--|
-|recv_set_port_en|[0]|rw|0x0||Once set, it only recv pkt from specific port|
+|filter_en|[0]|rw|0x0||Once set, it only recv pkt from specific port|
 
-### <div id="eth_csr-recv_set_port"></div>recv_set_port
+### <div id="eth_csr-filter_port"></div>filter_port
 
 * offset_address
     * 0x88
@@ -424,4 +425,15 @@
 
 |name|bit_assignments|type|initial_value|reference|comment|
 |:--|:--|:--|:--|:--|:--|
-|recv_set_port|[15:0]|rw|0x0000||Specific port to filter|
+|filter_port|[15:0]|rw|0x0000||Specific port to filter|
+
+### <div id="eth_csr-filter_ip"></div>filter_ip
+
+* offset_address
+    * 0x8c
+* type
+    * default
+
+|name|bit_assignments|type|initial_value|reference|comment|
+|:--|:--|:--|:--|:--|:--|
+|filter_ip|[31:0]|rw|0x00000000||Specific IP to filter|
