@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 05.06.2022
- * Last Modified Date: 20.07.2022
+ * Last Modified Date: 01.08.2022
  */
 module tb_eth
   import utils_pkg::*;
@@ -364,6 +364,7 @@ module tb_eth
 `endif
     // IRQ
     .pkt_recv_o        (pkt_recv),
-    .pkt_sent_o        (pkt_sent)
+    .pkt_sent_o        (pkt_sent),
+    .pkt_recv_full_o   ()
   );
 endmodule

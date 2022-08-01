@@ -144,7 +144,7 @@ package eth_csr_ral_pkg;
       super.new(name, 32, 0);
     endfunction
     function void build();
-      `rggen_ral_create_field(recv_fifo_empty, 0, 32, "RO", 1, 32'h00000000, 1, -1, "")
+      `rggen_ral_create_field(recv_fifo_empty, 0, 1, "RO", 1, 1'h0, 1, -1, "")
     endfunction
   endclass
   class send_mac_low_reg_model extends rggen_ral_reg;
@@ -243,7 +243,7 @@ package eth_csr_ral_pkg;
       super.new(name, 32, 0);
     endfunction
     function void build();
-      `rggen_ral_create_field(send_fifo_empty, 0, 32, "RO", 1, 32'h00000000, 1, -1, "")
+      `rggen_ral_create_field(send_fifo_empty, 0, 1, "RO", 1, 1'h0, 1, -1, "")
     endfunction
   endclass
   class send_pkt_reg_model extends rggen_ral_reg;
@@ -291,6 +291,33 @@ package eth_csr_ral_pkg;
       `rggen_ral_create_field(irq_pkt_sent, 0, 1, "RO", 1, 1'h0, 1, -1, "")
     endfunction
   endclass
+  class irq_pkt_recv_full_reg_model extends rggen_ral_reg;
+    rand rggen_ral_field irq_pkt_recv_full;
+    function new(string name);
+      super.new(name, 32, 0);
+    endfunction
+    function void build();
+      `rggen_ral_create_field(irq_pkt_recv_full, 0, 1, "RO", 1, 1'h0, 1, -1, "")
+    endfunction
+  endclass
+  class recv_set_port_en_reg_model extends rggen_ral_reg;
+    rand rggen_ral_field recv_set_port_en;
+    function new(string name);
+      super.new(name, 32, 0);
+    endfunction
+    function void build();
+      `rggen_ral_create_field(recv_set_port_en, 0, 1, "RW", 0, 1'h0, 1, -1, "")
+    endfunction
+  endclass
+  class recv_set_port_reg_model extends rggen_ral_reg;
+    rand rggen_ral_field recv_set_port;
+    function new(string name);
+      super.new(name, 32, 0);
+    endfunction
+    function void build();
+      `rggen_ral_create_field(recv_set_port, 0, 16, "RW", 0, 16'h0000, 1, -1, "")
+    endfunction
+  endclass
   class eth_csr_block_model extends rggen_ral_block;
     rand eth_mac_low_reg_model eth_mac_low;
     rand eth_mac_high_reg_model eth_mac_high;
@@ -324,6 +351,9 @@ package eth_csr_ral_pkg;
     rand clear_arp_reg_model clear_arp;
     rand irq_pkt_recv_reg_model irq_pkt_recv;
     rand irq_pkt_sent_reg_model irq_pkt_sent;
+    rand irq_pkt_recv_full_reg_model irq_pkt_recv_full;
+    rand recv_set_port_en_reg_model recv_set_port_en;
+    rand recv_set_port_reg_model recv_set_port;
     function new(string name);
       super.new(name, 4, 0);
     endfunction
@@ -360,6 +390,9 @@ package eth_csr_ral_pkg;
       `rggen_ral_create_reg(clear_arp, '{}, 8'h74, "WO", "g_clear_arp.u_register")
       `rggen_ral_create_reg(irq_pkt_recv, '{}, 8'h78, "RO", "g_irq_pkt_recv.u_register")
       `rggen_ral_create_reg(irq_pkt_sent, '{}, 8'h7c, "RO", "g_irq_pkt_sent.u_register")
+      `rggen_ral_create_reg(irq_pkt_recv_full, '{}, 8'h80, "RO", "g_irq_pkt_recv_full.u_register")
+      `rggen_ral_create_reg(recv_set_port_en, '{}, 8'h84, "RW", "g_recv_set_port_en.u_register")
+      `rggen_ral_create_reg(recv_set_port, '{}, 8'h88, "RW", "g_recv_set_port.u_register")
     endfunction
   endclass
 endpackage

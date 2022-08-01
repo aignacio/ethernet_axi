@@ -37,6 +37,9 @@
 |[clear_arp](#eth_csr-clear_arp)|0x74|
 |[irq_pkt_recv](#eth_csr-irq_pkt_recv)|0x78|
 |[irq_pkt_sent](#eth_csr-irq_pkt_sent)|0x7c|
+|[irq_pkt_recv_full](#eth_csr-irq_pkt_recv_full)|0x80|
+|[recv_set_port_en](#eth_csr-recv_set_port_en)|0x84|
+|[recv_set_port](#eth_csr-recv_set_port)|0x88|
 
 ### <div id="eth_csr-eth_mac_low"></div>eth_mac_low
 
@@ -212,7 +215,7 @@
 
 |name|bit_assignments|type|initial_value|reference|comment|
 |:--|:--|:--|:--|:--|:--|
-|recv_fifo_empty|[31:0]|ro|0x00000000||InFIFO Empty status|
+|recv_fifo_empty|[0]|ro|0x0||InFIFO Empty status|
 
 ### <div id="eth_csr-send_mac_low"></div>send_mac_low
 
@@ -333,7 +336,7 @@
 
 |name|bit_assignments|type|initial_value|reference|comment|
 |:--|:--|:--|:--|:--|:--|
-|send_fifo_empty|[31:0]|ro|0x00000000||OutFIFO Empty status|
+|send_fifo_empty|[0]|ro|0x0||OutFIFO Empty status|
 
 ### <div id="eth_csr-send_pkt"></div>send_pkt
 
@@ -355,7 +358,7 @@
 
 |name|bit_assignments|type|initial_value|reference|comment|
 |:--|:--|:--|:--|:--|:--|
-|clear_irq|[0]|wotrg|0x0||Clear IRQ recv pkt|
+|clear_irq|[0]|wotrg|0x0||Clear IRQ recv/sent pkt|
 
 ### <div id="eth_csr-clear_arp"></div>clear_arp
 
@@ -389,3 +392,36 @@
 |name|bit_assignments|type|initial_value|reference|comment|
 |:--|:--|:--|:--|:--|:--|
 |irq_pkt_sent|[0]|ro|0x0||Pkt sent IRQ|
+
+### <div id="eth_csr-irq_pkt_recv_full"></div>irq_pkt_recv_full
+
+* offset_address
+    * 0x80
+* type
+    * default
+
+|name|bit_assignments|type|initial_value|reference|comment|
+|:--|:--|:--|:--|:--|:--|
+|irq_pkt_recv_full|[0]|ro|0x0||Recv FIFO full IRQ|
+
+### <div id="eth_csr-recv_set_port_en"></div>recv_set_port_en
+
+* offset_address
+    * 0x84
+* type
+    * default
+
+|name|bit_assignments|type|initial_value|reference|comment|
+|:--|:--|:--|:--|:--|:--|
+|recv_set_port_en|[0]|rw|0x0||Once set, it only recv pkt from specific port|
+
+### <div id="eth_csr-recv_set_port"></div>recv_set_port
+
+* offset_address
+    * 0x88
+* type
+    * default
+
+|name|bit_assignments|type|initial_value|reference|comment|
+|:--|:--|:--|:--|:--|:--|
+|recv_set_port|[15:0]|rw|0x0000||Specific port to filter|

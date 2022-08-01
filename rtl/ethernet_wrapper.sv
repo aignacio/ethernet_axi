@@ -3,7 +3,7 @@
  * License           : MIT license <Check LICENSE>
  * Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
  * Date              : 03.07.2022
- * Last Modified Date: 31.07.2022
+ * Last Modified Date: 01.08.2022
  */
 module ethernet_wrapper
   import utils_pkg::*;
@@ -66,6 +66,7 @@ module ethernet_wrapper
   input                 phy_int_n,
 `endif
   // IRQs
+  output  logic         pkt_recv_full_o,
   output  logic         pkt_recv_o,
   output  logic         pkt_sent_o
 );
@@ -217,7 +218,9 @@ module ethernet_wrapper
     .i_send_fifo_wr_ptr                     (outfifo_status.wr_ptr),
     .i_send_fifo_full                       (outfifo_status.full),
     .i_send_fifo_empty                      (outfifo_status.empty),
-
+    .o_recv_set_port_en                     (recv_set_port_en),
+    .o_recv_set_port                        (recv_set_port),
+    .i_irq_pkt_recv_full                    (infifo_status.full),
     .i_irq_pkt_recv                         (irq_rx_ff),
     .i_irq_pkt_sent                         (irq_tx_ff)
   );
@@ -642,11 +645,11 @@ module ethernet_wrapper
     .m_udp_dest_port                        (recv_udp.dst_port),
     .m_udp_length                           (recv_udp.length),
     .m_udp_checksum                         (),
-    .m_udp_payload_axis_tdata               (axis_mosi_frame_output.tdata),
-    .m_udp_payload_axis_tvalid              (axis_mosi_frame_output.tvalid),
-    .m_udp_payload_axis_tready              (axis_miso_frame_output.tready),
-    .m_udp_payload_axis_tlast               (axis_mosi_frame_output.tlast),
-    .m_udp_payload_axis_tuser               (axis_mosi_frame_output.tuser),
+    .m_udp_payload_axis_tdata               (axis_mosi_frame_recv.tdata),
+    .m_udp_payload_axis_tvalid              (axis_mosi_frame_recv.tvalid),
+    .m_udp_payload_axis_tready              (axis_miso_frame_recv.tready),
+    .m_udp_payload_axis_tlast               (axis_mosi_frame_recv.tlast),
+    .m_udp_payload_axis_tuser               (axis_mosi_frame_recv.tuser),
     // Status signals
     .ip_rx_busy                             (),
     .ip_tx_busy                             (),
@@ -668,6 +671,9 @@ module ethernet_wrapper
     .subnet_mask                            (local_cfg.subnet_mask),
     .clear_arp_cache                        (clear_arp_cache)
   );
+
+  s_axis_mosi_t axis_mosi_frame_recv;
+  s_axis_miso_t axis_miso_frame_recv;
 
   s_axis_mosi_t axis_mosi_frame_input;
   s_axis_miso_t axis_miso_frame_input;
@@ -717,26 +723,31 @@ module ethernet_wrapper
     .fifo_cmd_i    (outfifo_cmd)
   );
 
-  s_eth_udp_t  recv_udp_ff, next_recv;
-  s_eth_udp_t  recv_udp;
-  s_eth_udp_t  send_udp;
-  logic        clear_irq;
-  logic        clear_arp_cache;
-  logic        send_pkt;
-  logic        send_pkt_ff, next_send_pkt;
-  logic        udp_hdr_ready;
-  logic        irq_rx_ff, next_rx_irq;
-  logic        irq_tx_ff, next_tx_irq;
-  s_fifo_st_t  infifo_status;
-  s_fifo_st_t  outfifo_status;
-  s_fifo_cmd_t infifo_cmd;
-  s_fifo_cmd_t outfifo_cmd;
+  s_eth_udp_t   recv_udp_ff, next_recv;
+  s_eth_udp_t   recv_udp;
+  s_eth_udp_t   send_udp;
+  logic         clear_irq;
+  logic         clear_arp_cache;
+  logic         send_pkt;
+  logic         send_pkt_ff, next_send_pkt;
+  logic         udp_hdr_ready;
+  logic         irq_rx_ff, next_rx_irq;
+  logic         irq_tx_ff, next_tx_irq;
+  s_fifo_st_t   infifo_status;
+  s_fifo_st_t   outfifo_status;
+  s_fifo_cmd_t  infifo_cmd;
+  s_fifo_cmd_t  outfifo_cmd;
+  logic [15:0]  recv_set_port;
+  logic         recv_set_port_en;
+  logic         valid_txn_ff, next_valid_txn;
 
   always_comb begin
     next_rx_irq = irq_rx_ff;
     pkt_recv_o = irq_rx_ff;
     next_recv = recv_udp_ff;
     infifo_cmd.start = 1'b0;
+    pkt_recv_full_o = infifo_status.full;
+    next_valid_txn = valid_txn_ff;
 
     // Receive pkt
     if (udp_hdr_valid) begin
@@ -773,20 +784,41 @@ module ethernet_wrapper
     if (clear_irq) begin
       next_tx_irq = 1'b0;
     end
+
+    axis_miso_frame_recv.tready = 'b1;
+    axis_mosi_frame_output = s_axis_mosi_t'('0);
+
+    if (recv_set_port_en) begin
+      if (recv_set_port == recv_udp.dst_port) begin
+        next_valid_txn = 'b1;
+      end
+
+      if (valid_txn_ff) begin
+        axis_mosi_frame_output = axis_mosi_frame_recv;
+        axis_miso_frame_recv = axis_miso_frame_output;
+        next_valid_txn = (axis_mosi_frame_output.tvalid && axis_miso_frame_output.tready && axis_mosi_frame_output.tlast) ? 1'b0 : 1'b1;
+      end
+    end
+    else begin
+      axis_mosi_frame_output = axis_mosi_frame_recv;
+      axis_miso_frame_recv = axis_miso_frame_output;
+    end
   end
 
   always_ff @ (posedge clk_axi) begin
     if (rst_axi) begin
-      recv_udp_ff <= s_eth_udp_t'('0);
-      irq_rx_ff   <= 1'b0;
-      irq_tx_ff   <= 1'b0;
-      send_pkt_ff <= 1'b0;
+      recv_udp_ff  <= s_eth_udp_t'('0);
+      irq_rx_ff    <= 1'b0;
+      irq_tx_ff    <= 1'b0;
+      send_pkt_ff  <= 1'b0;
+      valid_txn_ff <= 1'b0;
     end
     else begin
-      recv_udp_ff <= next_recv;
-      irq_rx_ff   <= next_rx_irq;
-      irq_tx_ff   <= next_tx_irq;
-      send_pkt_ff <= next_send_pkt;
+      recv_udp_ff  <= next_recv;
+      irq_rx_ff    <= next_rx_irq;
+      irq_tx_ff    <= next_tx_irq;
+      send_pkt_ff  <= next_send_pkt;
+      valid_txn_ff <= next_valid_txn;
     end
   end
 endmodule
