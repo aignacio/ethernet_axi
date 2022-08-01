@@ -790,7 +790,7 @@ module ethernet_wrapper
     axis_mosi_frame_output = s_axis_mosi_t'('0);
 
     if (recv_set_port_en) begin
-      if ((recv_set_port == recv_udp.dst_port) && (ip_protocol == 'd17)) begin
+      if ((udp_hdr_valid == 'b1) && (recv_set_port == recv_udp.dst_port) && (ip_protocol == 'd17)) begin
         next_valid_txn = 'b1;
       end
 
