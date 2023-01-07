@@ -68,6 +68,7 @@ module ethernet_wrapper
   logic        tx_eth_payload_axis_tuser;
 
   logic        udp_hdr_valid;
+  logic        clk_200MHz;
   logic        clk_125MHz; // Internal clock
   logic        clk_90MHz;
   logic        clk_25MHz;
@@ -99,6 +100,7 @@ module ethernet_wrapper
   assign phy_reset_n = !rst_int;
 
 `ifdef VERILATOR
+  assign clk_200MHz = clk_src;
   assign clk_125MHz = clk_src;
   assign clk_90MHz  = clk_src;
   assign clk_25MHz  = clk_src;
@@ -117,6 +119,7 @@ module ethernet_wrapper
     .rst_in       (rst_axi),
     .clk_125MHz   (clk_125MHz),
     .clk_90MHz    (clk_90MHz),
+    .clk_200MHz   (clk_200MHz),
     .clk_locked   (clk_locked)
   );
 `endif
@@ -199,6 +202,12 @@ module ethernet_wrapper
   // IODELAY elements for RGMII interface to PHY
   logic [3:0] phy_rxd_delay;
   logic       phy_rx_ctl_delay;
+
+  IDELAYCTRL idelayctrl_inst(
+    .REFCLK       (clk_200MHz),
+    .RST          (rst_int),
+    .RDY          ()
+  );
 
   IDELAYE2 #(
     .IDELAY_TYPE  ("FIXED")

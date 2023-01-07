@@ -13,6 +13,7 @@ module clk_mgmt_eth(
   input         rst_in,
   output  logic clk_125MHz,
   output  logic clk_90MHz,
+  output  logic clk_200MHz,
   output  logic clk_locked
 );
 
@@ -70,7 +71,7 @@ module clk_mgmt_eth(
     .CLKOUT0B          (),
     .CLKOUT1           (clk_mmcm_out_90MHz),
     .CLKOUT1B          (),
-    .CLKOUT2           (),
+    .CLKOUT2           (clk_mmcm_out_200MHz),
     .CLKOUT2B          (),
     .CLKOUT3           (),
     .CLKOUT3B          (),
@@ -95,6 +96,11 @@ module clk_mgmt_eth(
   IBUFG clk_ibufg_inst(
     .I(clk_in),
     .O(clk_ibufg)
+  );
+
+  BUFG clk_200_bufg_inst(
+    .I(clk_mmcm_out_200MHz),
+    .O(clk_200MHz)
   );
 
 endmodule
