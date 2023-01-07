@@ -40,8 +40,8 @@ module pkt_fifo
   udp_length_t len_cnt_ff, next_len;
 
   // Byte based pointers
-  ptr_t rd_ptr_ff, next_rd_ptr;
-  ptr_t wr_ptr_ff, next_wr_ptr;
+  (* async_reg = "true" *) ptr_t rd_ptr_ff, next_rd_ptr;
+  (* async_reg = "true" *) ptr_t wr_ptr_ff, next_wr_ptr;
 
   logic [$clog2(M_WIDTH)-1:0] rd_mem_addr;
   logic                       rd_mem_en;
