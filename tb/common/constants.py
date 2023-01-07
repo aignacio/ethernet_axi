@@ -4,7 +4,7 @@
 # License           : MIT license <Check LICENSE>
 # Author            : Anderson Ignacio da Silva (aignacio) <anderson@aignacio.com>
 # Date              : 03.06.2022
-# Last Modified Date: 19.07.2022
+# Last Modified Date: 07.01.2023
 import os
 import glob
 import copy
@@ -41,14 +41,16 @@ class cfg_const:
 
     TESTS_DIR       = os.path.dirname(os.path.abspath(__file__))
     RTL_DIR         = os.path.join(TESTS_DIR,"../../rtl/")
+    BUS_ARCH_PKG_DIR= os.path.join(TESTS_DIR,"../../bus_arch_sv_pkg/")
     RGGEN_V_DIR     = os.path.join(TESTS_DIR,"../../rggen-verilog-rtl/")
     ETH_V_DIR       = os.path.join(TESTS_DIR,"../../verilog-ethernet/")
     CSR_DIR         = os.path.join(TESTS_DIR,"../../csr_out/")
-    INC_DIR         = [f'{RTL_DIR}inc',f'{RGGEN_V_DIR}']
+    INC_DIR         = [f'{BUS_ARCH_PKG_DIR}',f'{RTL_DIR}inc',f'{RGGEN_V_DIR}']
     VERILOG_SOURCES = [] # The sequence below is important...
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RGGEN_V_DIR}/rggen_rtl_macros.vh',recursive=True)
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{BUS_ARCH_PKG_DIR}/*.sv',recursive=True)
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}inc/*.sv',recursive=True)
-    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}inc/*.svh',recursive=True)
+    VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}inc/*.sv',recursive=True)
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}**/*.sv',recursive=True)
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RTL_DIR}**/*.v',recursive=True)
     VERILOG_SOURCES = VERILOG_SOURCES + glob.glob(f'{RGGEN_V_DIR}**/*.v',recursive=True)

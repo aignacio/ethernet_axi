@@ -6,7 +6,8 @@
  * Last Modified Date: 01.08.2022
  */
 module tb_eth
-  import utils_pkg::*;
+  import amba_axi_pkg::*;
+  import eth_pkg::*;
 (
   input                   clk,
   input                   clk_axi,
@@ -30,12 +31,12 @@ module tb_eth
   output                  eth_csr_awready,
   output                  eth_csr_wready,
   output  axi_tid_t       eth_csr_bid,
-  output  axi_error_t     eth_csr_bresp,
+  output  axi_resp_t      eth_csr_bresp,
   output                  eth_csr_bvalid,
   output                  eth_csr_arready,
   output  axi_tid_t       eth_csr_rid,
   output  axi_data_t      eth_csr_rdata,
-  output  axi_error_t     eth_csr_rresp,
+  output  axi_resp_t      eth_csr_rresp,
   output                  eth_csr_rvalid,
 
   // Slave INFIFO AXI4 I/F
@@ -74,13 +75,13 @@ module tb_eth
   output                  eth_infifo_s_awready,
   output                  eth_infifo_s_wready,
   output  axi_tid_t       eth_infifo_s_bid,
-  output  axi_error_t     eth_infifo_s_bresp,
+  output  axi_resp_t      eth_infifo_s_bresp,
   output  axi_user_rsp_t  eth_infifo_s_buser,
   output                  eth_infifo_s_bvalid,
   output                  eth_infifo_s_arready,
   output  axi_tid_t       eth_infifo_s_rid,
   output  axi_data_t      eth_infifo_s_rdata,
-  output  axi_error_t     eth_infifo_s_rresp,
+  output  axi_resp_t      eth_infifo_s_rresp,
   output                  eth_infifo_s_rlast,
   output  axi_user_data_t eth_infifo_s_ruser,
   output                  eth_infifo_s_rvalid,
@@ -121,31 +122,17 @@ module tb_eth
   output                  eth_outfifo_s_awready,
   output                  eth_outfifo_s_wready,
   output  axi_tid_t       eth_outfifo_s_bid,
-  output  axi_error_t     eth_outfifo_s_bresp,
+  output  axi_resp_t      eth_outfifo_s_bresp,
   output  axi_user_rsp_t  eth_outfifo_s_buser,
   output                  eth_outfifo_s_bvalid,
   output                  eth_outfifo_s_arready,
   output  axi_tid_t       eth_outfifo_s_rid,
   output  axi_data_t      eth_outfifo_s_rdata,
-  output  axi_error_t     eth_outfifo_s_rresp,
+  output  axi_resp_t      eth_outfifo_s_rresp,
   output                  eth_outfifo_s_rlast,
   output  axi_user_data_t eth_outfifo_s_ruser,
   output                  eth_outfifo_s_rvalid,
 
-`ifdef ETH_TARGET_FPGA_ARTY
-  // Ethernet: 100BASE-T MII
-  output  logic           phy_ref_clk, // 25MHz
-  input                   phy_rx_clk,
-  input   [3:0]           phy_rxd,
-  input                   phy_rx_dv,
-  input                   phy_rx_er,
-  input                   phy_tx_clk,
-  output  [3:0]           phy_txd,
-  output                  phy_tx_en,
-  input                   phy_col,
-  input                   phy_crs,
-  output  logic           phy_reset_n,
-`elsif ETH_TARGET_FPGA_NEXYSV
   // Ethernet: 1000BASE-T RGMII
   input                   phy_rx_clk,
   input   [3:0]           phy_rxd,
@@ -156,20 +143,6 @@ module tb_eth
   output                  phy_reset_n,
   input                   phy_int_n,
   input                   phy_pme_n,
-`elsif ETH_TARGET_FPGA_KINTEX
-  // Ethernet: 1000BASE-T GMII
-  input                   phy_rx_clk,
-  input   [7:0]           phy_rxd,
-  input                   phy_rx_dv,
-  input                   phy_rx_er,
-  output                  phy_gtx_clk,
-  input                   phy_tx_clk,
-  output  [7:0]           phy_txd,
-  output                  phy_tx_en,
-  output                  phy_tx_er,
-  output                  phy_reset_n,
-  input                   phy_int_n,
-`endif
 
   // IRQ
   output                  pkt_recv,
@@ -304,16 +277,23 @@ module tb_eth
     eth_outfifo_s_rvalid  = eth_outfifo_miso.rvalid;
   end
 
+  s_rgmii_tx_t phy_tx;
+  s_rgmii_rx_t phy_rx;
+
+  // Ethernet: 1000BASE-T RGMII
+  assign phy_rx.phy_rx_clk = phy_rx_clk;
+  assign phy_rx.phy_rxd    = phy_rxd;
+  assign phy_rx.phy_rx_ctl = phy_rx_ctl;
+  assign phy_rx.phy_int_n  = phy_int_n;
+  assign phy_rx.phy_pme_n  = phy_pme_n;
+
+  assign phy_tx_clk   = phy_tx.phy_tx_clk;
+  assign phy_txd      = phy_tx.phy_txd;
+  assign phy_tx_ctl   = phy_tx.phy_tx_ctl;
+  assign phy_reset_n  = phy_tx.phy_reset_n;
 
   ethernet_wrapper u_eth(
-`ifdef ETH_TARGET_FPGA_ARTY
     .clk_src           (clk),   // 100MHz
-`elsif ETH_TARGET_FPGA_NEXYSV
-    .clk_src           (clk),   // 100MHz
-`elsif ETH_TARGET_FPGA_KINTEX
-    .clk_in_p          (clk),   // 50MHz
-    .clk_in_n          (clk),   // 50MHz
-`endif
     .clk_axi           (clk_axi),
     .rst_axi           (rst),
     // CSR AXIL I/F
@@ -324,44 +304,9 @@ module tb_eth
     .eth_infifo_miso_o (eth_infifo_miso),
     .eth_outfifo_mosi_i(eth_outfifo_mosi),
     .eth_outfifo_miso_o(eth_outfifo_miso),
-`ifdef ETH_TARGET_FPGA_ARTY
-    // Ethernet: 100BASE-T MII
-    .phy_ref_clk       (phy_ref_clk),
-    .phy_rx_clk        (phy_rx_clk),
-    .phy_rxd           (phy_rxd),
-    .phy_rx_dv         (phy_rx_dv),
-    .phy_rx_er         (phy_rx_er),
-    .phy_tx_clk        (phy_tx_clk),
-    .phy_txd           (phy_txd),
-    .phy_tx_en         (phy_tx_en),
-    .phy_col           (phy_col),
-    .phy_crs           (phy_crs),
-    .phy_reset_n       (phy_reset_n),
-`elsif ETH_TARGET_FPGA_NEXYSV
     // Ethernet: 1000BASE-T RGMII
-    .phy_rx_clk        (phy_rx_clk),
-    .phy_rxd           (phy_rxd),
-    .phy_rx_ctl        (phy_rx_ctl),
-    .phy_tx_clk        (phy_tx_clk),
-    .phy_txd           (phy_txd),
-    .phy_tx_ctl        (phy_tx_ctl),
-    .phy_reset_n       (phy_reset_n),
-    .phy_int_n         (phy_int_n),
-    .phy_pme_n         (phy_pme_n),
-`elsif ETH_TARGET_FPGA_KINTEX
-    // Ethernet: 1000BASE-T GMII
-    .phy_rx_clk        (phy_rx_clk),
-    .phy_rxd           (phy_rxd),
-    .phy_rx_dv         (phy_rx_dv),
-    .phy_rx_er         (phy_rx_er),
-    .phy_gtx_clk       (phy_gtx_clk),
-    .phy_tx_clk        (phy_tx_clk),
-    .phy_txd           (phy_txd),
-    .phy_tx_en         (phy_tx_en),
-    .phy_tx_er         (phy_tx_er),
-    .phy_reset_n       (phy_reset_n),
-    .phy_int_n         (phy_int_n),
-`endif
+    .phy_tx            (phy_tx),
+    .phy_rx            (phy_rx),
     // IRQ
     .pkt_recv_o        (pkt_recv),
     .pkt_sent_o        (pkt_sent),

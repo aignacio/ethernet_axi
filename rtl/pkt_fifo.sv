@@ -6,7 +6,8 @@
  * Last Modified Date: 31.07.2022
  */
 module pkt_fifo
-  import utils_pkg::*;
+  import amba_axi_pkg::*;
+  import eth_pkg::*;
 #(
   parameter int FIFO_TYPE = "IN" // or "OUT"
 )(
@@ -27,8 +28,8 @@ module pkt_fifo
   output  s_fifo_st_t   fifo_st_o,
   input   s_fifo_cmd_t  fifo_cmd_i
 );
-  localparam  M_WIDTH = (FIFO_TYPE == "IN") ? (INFIFO_KB_SIZE*256) :
-                                              (OUTFIFO_KB_SIZE*256);
+  localparam  M_WIDTH = (FIFO_TYPE == "IN") ? (ETH_INFIFO_KB_SIZE*256) :
+                                              (ETH_OUTFIFO_KB_SIZE*256);
 
   typedef logic [$bits({axi_mosi.arlen,axi_mosi.arid})-1:0] fifo_t;
 
@@ -89,11 +90,11 @@ module pkt_fifo
     fifo_st_o.empty  = (rd_ptr_ff == wr_ptr_ff);
 
     if (FIFO_TYPE == "IN") begin
-      fifo_st_o.full = ((wr_ptr_ff-rd_ptr_ff) == INFIFO_KB_SIZE*1024);
+      fifo_st_o.full = ((wr_ptr_ff-rd_ptr_ff) == ETH_INFIFO_KB_SIZE*1024);
       fifo_st_o.done = axis_sin_mosi.tvalid && axis_sin_mosi.tlast && axis_sin_miso.tready;
     end
     else begin
-      fifo_st_o.full = ((wr_ptr_ff-rd_ptr_ff) == OUTFIFO_KB_SIZE*1024);
+      fifo_st_o.full = ((wr_ptr_ff-rd_ptr_ff) == ETH_OUTFIFO_KB_SIZE*1024);
     end
   end
 
@@ -104,11 +105,11 @@ module pkt_fifo
     if (FIFO_TYPE == "IN") begin
       // InFIFO
       next_rd_ptr = rd_ptr_ff + (axi_read ? 'd4 : 'd0);
-      rd_mem_addr = rd_ptr_ff[$clog2(INFIFO_KB_SIZE*1024)-1:2];
+      rd_mem_addr = rd_ptr_ff[$clog2(ETH_INFIFO_KB_SIZE*1024)-1:2];
       rd_mem_en   = axi_read;
 
       next_wr_ptr = wr_ptr_ff + (axis_write ? 'd1 : 'd0);
-      wr_mem_addr = wr_ptr_ff[$clog2(INFIFO_KB_SIZE*1024)-1:2];
+      wr_mem_addr = wr_ptr_ff[$clog2(ETH_INFIFO_KB_SIZE*1024)-1:2];
       wr_mem_en   = axis_write;
       wr_mem_data = {axis_sin_mosi.tdata, axis_sin_mosi.tdata,
                      axis_sin_mosi.tdata, axis_sin_mosi.tdata};
@@ -122,11 +123,11 @@ module pkt_fifo
     else begin
       // OutFIFO
       next_rd_ptr = rd_ptr_ff + (axis_read ? 'd1 : 'd0);
-      rd_mem_addr = rd_ptr_ff[$clog2(OUTFIFO_KB_SIZE*1024)-1:2];
+      rd_mem_addr = rd_ptr_ff[$clog2(ETH_OUTFIFO_KB_SIZE*1024)-1:2];
       rd_mem_en   = axis_read;
 
       next_wr_ptr = wr_ptr_ff + (axi_write ? conv_strb(axi_mosi.wstrb) : 'd0);
-      wr_mem_addr = wr_ptr_ff[$clog2(OUTFIFO_KB_SIZE*1024)-1:2];
+      wr_mem_addr = wr_ptr_ff[$clog2(ETH_OUTFIFO_KB_SIZE*1024)-1:2];
       wr_mem_en   = axi_write;
       wr_mem_data = axi_mosi.wdata;
       wr_mem_strb = axi_mosi.wstrb;

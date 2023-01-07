@@ -1,11 +1,18 @@
 `ifndef _ETH_PKG_
-`define _ETH_PKG_
+  `define _ETH_PKG_
+  package eth_pkg;
   typedef logic [47:0] mac_addr_t;
   typedef logic [31:0] ip_addr_t;
   typedef logic [15:0] udp_length_t;
   typedef logic [31:0] subnet_mask_t;
   typedef logic [15:0] port_t;
-  typedef logic [$clog2(INFIFO_KB_SIZE*1024):0] ptr_t;
+  typedef logic [$clog2(ETH_INFIFO_KB_SIZE*1024):0] ptr_t;
+
+  typedef enum logic [1:0] {
+    IDLE_PKT_ST,
+    STREAMING_PKT_ST,
+    DONE_PKT_ST
+  } fsm_pkt_t;
 
   typedef struct packed {
     mac_addr_t    mac;
@@ -36,22 +43,23 @@
     udp_length_t  length;
   } s_fifo_cmd_t;
 
-  typedef enum logic [1:0] {
-    IDLE_PKT_ST,
-    STREAMING_PKT_ST,
-    DONE_PKT_ST
-  } fsm_pkt_t;
+  typedef struct packed {
+    logic         phy_tx_clk;
+    logic [3:0]   phy_txd;
+    logic         phy_tx_ctl;
+    logic         phy_reset_n;
+  } s_rgmii_tx_t;
 
-  `ifndef ETH_TARGET_FPGA_ARTY
-  `ifndef ETH_TARGET_FPGA_NEXYSV
-  `ifndef ETH_TARGET_FPGA_KINTEX
-    `define    ETH_TARGET_FPGA_ARTY // ARTY, NEXYSV, KINTEX
-  `endif
-  `endif
-  `endif
+  typedef struct packed {
+    logic         phy_rx_clk;
+    logic [3:0]   phy_rxd;
+    logic         phy_rx_ctl;
+    logic         phy_int_n;
+    logic         phy_pme_n;
+  } s_rgmii_rx_t;
 
-  localparam INFIFO_KB_SIZE                  = 1;
-  localparam OUTFIFO_KB_SIZE                 = 1;
+  localparam ETH_INFIFO_KB_SIZE              = 1;
+  localparam ETH_OUTFIFO_KB_SIZE             = 1;
   localparam ETH_OT_FIFO                     = 4;
 
   localparam ARP_CACHE_ADDR_WIDTH            = 9;
@@ -61,4 +69,6 @@
   localparam UDP_CHECKSUM_GEN_ENABLE         = 1;
   localparam UDP_CHECKSUM_PAYLOAD_FIFO_DEPTH = 2048;
   localparam UDP_CHECKSUM_HEADER_FIFO_DEPTH  = 8;
+
+  endpackage;
 `endif

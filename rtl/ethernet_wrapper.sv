@@ -6,16 +6,10 @@
  * Last Modified Date: 01.08.2022
  */
 module ethernet_wrapper
-  import utils_pkg::*;
+  import amba_axi_pkg::*;
+  import eth_pkg::*;
 (
-`ifdef ETH_TARGET_FPGA_ARTY
   input                 clk_src,  // 100MHz
-`elsif ETH_TARGET_FPGA_NEXYSV
-  input                 clk_src,  // 100MHz
-`elsif ETH_TARGET_FPGA_KINTEX
-  input                 clk_in_p, // 200MHz
-  input                 clk_in_n, // 200MHz
-`endif
   input                 clk_axi,  // Clk of the AXI bus
   input                 rst_axi,  // Active-High
   // CSR I/F
@@ -27,44 +21,9 @@ module ethernet_wrapper
   // Slave outFIFO I/F
   input   s_axi_mosi_t  eth_outfifo_mosi_i,
   output  s_axi_miso_t  eth_outfifo_miso_o,
-`ifdef ETH_TARGET_FPGA_ARTY
-  // Ethernet: 100BASE-T MII
-  output  logic         phy_ref_clk, // 25MHz
-  input                 phy_rx_clk,
-  input   [3:0]         phy_rxd,
-  input                 phy_rx_dv,
-  input                 phy_rx_er,
-  input                 phy_tx_clk,
-  output  [3:0]         phy_txd,
-  output                phy_tx_en,
-  input                 phy_col,
-  input                 phy_crs,
-  output  logic         phy_reset_n,
-`elsif ETH_TARGET_FPGA_NEXYSV
   // Ethernet: 1000BASE-T RGMII
-  input                 phy_rx_clk,
-  input   [3:0]         phy_rxd,
-  input                 phy_rx_ctl,
-  output                phy_tx_clk,
-  output  [3:0]         phy_txd,
-  output                phy_tx_ctl,
-  output                phy_reset_n,
-  input                 phy_int_n,
-  input                 phy_pme_n,
-`elsif ETH_TARGET_FPGA_KINTEX
-  // Ethernet: 1000BASE-T GMII
-  input                 phy_rx_clk,
-  input   [7:0]         phy_rxd,
-  input                 phy_rx_dv,
-  input                 phy_rx_er,
-  output                phy_gtx_clk,
-  input                 phy_tx_clk,
-  output  [7:0]         phy_txd,
-  output                phy_tx_en,
-  output                phy_tx_er,
-  output                phy_reset_n,
-  input                 phy_int_n,
-`endif
+  output  s_rgmii_tx_t  phy_tx,
+  input   s_rgmii_rx_t  phy_rx,
   // IRQs
   output  logic         pkt_recv_full_o,
   output  logic         pkt_recv_o,
@@ -116,6 +75,28 @@ module ethernet_wrapper
   logic        clk_locked;
   logic        rst_int;
 
+  logic              phy_rx_clk;
+  logic[3:0]         phy_rxd;
+  logic              phy_rx_ctl;
+  logic              phy_tx_clk;
+  logic[3:0]         phy_txd;
+  logic              phy_tx_ctl;
+  logic              phy_reset_n;
+  logic              phy_int_n;
+  logic              phy_pme_n;
+
+  // Ethernet: 1000BASE-T RGMII
+  assign phy_rx_clk = phy_rx.phy_rx_clk;
+  assign phy_rxd    = phy_rx.phy_rxd;
+  assign phy_rx_ctl = phy_rx.phy_rx_ctl;
+  assign phy_int_n  = phy_rx.phy_int_n;
+  assign phy_pme_n  = phy_rx.phy_pme_n;
+
+  assign phy_tx.phy_tx_clk  = phy_tx_clk;
+  assign phy_tx.phy_txd     = phy_txd;
+  assign phy_tx.phy_tx_ctl  = phy_tx_ctl;
+  assign phy_tx.phy_reset_n = phy_reset_n;
+
   assign phy_reset_n = !rst_int;
 
 `ifdef VERILATOR
@@ -134,24 +115,15 @@ module ethernet_wrapper
   );
 
   clk_mgmt_eth u_clk_mgmt_eth(
-  `ifdef ETH_TARGET_FPGA_KINTEX
-    .clk_in_p     (clk_in_p),
-    .clk_in_n     (clk_in_n),
-  `else
     .clk_in       (clk_src),  // 100MHz
-  `endif
     .rst_in       (rst_axi),
     .clk_125MHz   (clk_125MHz),
-  `ifdef ETH_TARGET_FPGA_NEXYSV
     .clk_90MHz    (clk_90MHz),
     .clk_200MHz   (clk_200MHz),
-  `endif
-  `ifdef ETH_TARGET_FPGA_ARTY
-    .clk_25MHz    (phy_ref_clk),
-  `endif
     .clk_locked   (clk_locked)
   );
 `endif
+
   /* verilator lint_off WIDTH */
   eth_csr #(
     .ID_WIDTH                               (`AXI_TXN_ID_WIDTH)
@@ -227,57 +199,6 @@ module ethernet_wrapper
   );
   /* verilator lint_on WIDTH */
 
-`ifdef ETH_TARGET_FPGA_ARTY
-  eth_mac_mii_fifo #(
-    .TARGET                                 ("XILINX"),
-    .CLOCK_INPUT_STYLE                      ("BUFR"),
-    .ENABLE_PADDING                         (1),
-    .MIN_FRAME_LENGTH                       (64),
-    .TX_FIFO_DEPTH                          (4096),
-    .TX_FRAME_FIFO                          (1),
-    .RX_FIFO_DEPTH                          (4096),
-    .RX_FRAME_FIFO                          (1)
-  ) eth_mac_inst (
-    .rst                                    (rst_int),
-    .logic_clk                              (clk_125MHz),
-    .logic_rst                              (rst_int),
-
-    .tx_axis_tdata                          (tx_axis_tdata),
-    .tx_axis_tvalid                         (tx_axis_tvalid),
-    .tx_axis_tready                         (tx_axis_tready),
-    .tx_axis_tlast                          (tx_axis_tlast),
-    .tx_axis_tuser                          (tx_axis_tuser),
-    .tx_axis_tkeep                          ('1),
-
-    .rx_axis_tdata                          (rx_axis_tdata),
-    .rx_axis_tvalid                         (rx_axis_tvalid),
-    .rx_axis_tready                         (rx_axis_tready),
-    .rx_axis_tlast                          (rx_axis_tlast),
-    .rx_axis_tuser                          (rx_axis_tuser),
-    .rx_axis_tkeep                          (),
-
-    .mii_rx_clk                             (phy_rx_clk),
-    .mii_rxd                                (phy_rxd),
-    .mii_rx_dv                              (phy_rx_dv),
-    .mii_rx_er                              (phy_rx_er),
-    .mii_tx_clk                             (phy_tx_clk),
-    .mii_txd                                (phy_txd),
-    .mii_tx_en                              (phy_tx_en),
-    .mii_tx_er                              (),
-
-    .tx_fifo_overflow                       (),
-    .tx_fifo_bad_frame                      (),
-    .tx_fifo_good_frame                     (),
-    .rx_error_bad_frame                     (),
-    .rx_error_bad_fcs                       (),
-    .rx_fifo_overflow                       (),
-    .rx_fifo_bad_frame                      (),
-    .rx_fifo_good_frame                     (),
-
-    .ifg_delay                              (12),
-    .tx_error_underflow                     ()
-  );
-`elsif ETH_TARGET_FPGA_NEXYSV
   // IODELAY elements for RGMII interface to PHY
   logic [3:0] phy_rxd_delay;
   logic       phy_rx_ctl_delay;
@@ -425,61 +346,6 @@ module ethernet_wrapper
 
     .ifg_delay                              (12)
   );
-`elsif ETH_TARGET_FPGA_KINTEX
-  eth_mac_1g_gmii_fifo #(
-    .TARGET                                 ("XILINX"),
-    .IODDR_STYLE                            ("IODDR"),
-    .CLOCK_INPUT_STYLE                      ("BUFR"),
-    .ENABLE_PADDING                         (1),
-    .MIN_FRAME_LENGTH                       (64),
-    .TX_FIFO_DEPTH                          (4096),
-    .TX_FRAME_FIFO                          (1),
-    .RX_FIFO_DEPTH                          (4096),
-    .RX_FRAME_FIFO                          (1)
-  ) eth_mac_inst (
-    .gtx_clk                                (clk_125MHz),
-    .gtx_rst                                (rst_int),
-    .logic_clk                              (clk_axi),
-    .logic_rst                              (rst_axi),
-
-    .tx_axis_tdata                          (tx_axis_tdata),
-    .tx_axis_tvalid                         (tx_axis_tvalid),
-    .tx_axis_tready                         (tx_axis_tready),
-    .tx_axis_tlast                          (tx_axis_tlast),
-    .tx_axis_tuser                          (tx_axis_tuser),
-    .tx_axis_tkeep                          ('1),
-
-    .rx_axis_tdata                          (rx_axis_tdata),
-    .rx_axis_tvalid                         (rx_axis_tvalid),
-    .rx_axis_tready                         (rx_axis_tready),
-    .rx_axis_tlast                          (rx_axis_tlast),
-    .rx_axis_tuser                          (rx_axis_tuser),
-    .rx_axis_tkeep                          (),
-
-    .gmii_rx_clk                            (phy_rx_clk),
-    .gmii_rxd                               (phy_rxd),
-    .gmii_rx_dv                             (phy_rx_dv),
-    .gmii_rx_er                             (phy_rx_er),
-    .gmii_tx_clk                            (phy_gtx_clk),
-    .mii_tx_clk                             (phy_tx_clk),
-    .gmii_txd                               (phy_txd),
-    .gmii_tx_en                             (phy_tx_en),
-    .gmii_tx_er                             (phy_tx_er),
-
-    .tx_fifo_overflow                       (),
-    .tx_fifo_bad_frame                      (),
-    .tx_fifo_good_frame                     (),
-    .rx_error_bad_frame                     (),
-    .rx_error_bad_fcs                       (),
-    .rx_fifo_overflow                       (),
-    .rx_fifo_bad_frame                      (),
-    .rx_fifo_good_frame                     (),
-    .speed                                  (),
-    .tx_error_underflow                     (),
-
-    .ifg_delay                              (12)
-  );
-`endif
 
   eth_axis_rx u_eth_axis_rx (
     .clk                                    (clk_axi),
